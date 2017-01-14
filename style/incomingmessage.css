@@ -1,0 +1,94 @@
+@font-face {
+    font-family: font-main;
+    src: url('./fonts/font.otf');
+}
+
+*{
+    margin:0;
+    padding:0;
+    font-family: font-main;
+    color: white;
+}
+
+#content-div{
+    width: 100vw;
+    height: 100vh;
+    border-radius: 10px 0px 0px 0px;
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.translucent{
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0.9;
+}
+
+header{
+    height: 56px;
+}
+
+#sender_pic{
+    width: 48px;
+    height: 48px;
+    border-radius: 1000px;
+    margin: 4px;
+    display:inline-block;
+}
+
+#sender_info{
+    display:inline-block;
+    vertical-align: top;
+    height: 56px;
+}
+
+#thread_name{
+    text-align: left;
+    font-size: 14pt;
+    padding-top: 28px;
+    line-height: 0px;
+    font-weight: normal;
+}
+
+#sender_name{
+    text-align: left;
+    font-size: 10pt;
+    opacity: 0.5;
+    vertical-align: center;
+    line-height: 32px;
+    font-weight: normal;
+}
+
+#close_button{
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    left: calc(100vw - 26px);
+    top: 0px;
+    border-radius: 1000px;
+    border: none;
+    background-color: rgb(20, 20,20, 0.02);
+    background-image: url('../img/ico_close.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    opacity: 0.7;
+    transition: opacity 300ms ease-in-out;
+}
+
+#close_button:hover{
+    background-color: rgb(20, 20, 20, 0.1);
+    opacity: 1.0;
+}
+
+#reply_button{
+    position: absolute;
+    top: calc(100vh - 40px);
+    left: calc(100vw - 40px);
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 1000px;
+    background-color: #2196F3;
+    background-image: url('../img/ico_edit.png');
+    background-position: 4px 4px;
+    background-repeat: no-repeat;
+    background-size: 24px 24px;
+}
