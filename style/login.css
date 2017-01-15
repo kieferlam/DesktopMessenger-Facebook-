@@ -11,6 +11,9 @@
 
 body{
     background: #3B5998;
+    position: relative;
+    margin: 0;
+    overflow: hidden;
 }
 
 #form-container{
@@ -64,9 +67,117 @@ body{
     background: #3B5998;
     color: white;
     overflow: auto;
+    transition: box-shadow 200ms ease-out;
+}
+
+#login-button:hover{
+    box-shadow: 0px 2px 5px #888888;
+}
+
+#login-button:disabled{
+    color: #6E8CCB;
 }
 
 .button-align-right-container{
     width: 100%;
     text-align: right;
+}
+
+#info-container{
+    float: left;
+}
+
+.info-error{
+    color: red;
+    font-size: 12pt;
+}
+
+#loadingDiv{
+    display: inline-block;
+    width: 64px;
+    height: 48px;
+}
+
+#loadingMon{
+    display: inline-block;
+    width: 64px;
+    height: 36px;
+    background: #3B5998;
+    border-radius: 4px;
+}
+
+#loadingScreen{
+    display: inline-block;
+    width: 56px;
+    height: 28px;
+    margin: 4px;
+    background: white;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+@keyframes fontGrowAnim{
+    from{
+        font-size: 0;
+    }
+    to{
+        font-size: 10pt;
+    }
+}
+
+.loadingChar{
+    font-size: 0;
+    color: #3B5998;
+    animation: fontGrowAnim 100ms ease-out 0s 1;
+    animation-fill-mode: forwards;
+    transition: all 100ms ease-out;
+}
+
+
+#loadingMonStand{
+    display: inline-block;
+    position: relative;
+    left: 30px;
+    top: -6px;
+    width: 4px;
+    height: 12px;
+    background: #3B5998;
+}
+
+@keyframes tickReveal{
+    from{
+        transform: scale(12) rotate(0deg) ;
+    }
+    to{
+        transform: scale(1) rotate(1080deg) ;
+    }
+}
+
+.successTick{
+    display: inline-block;
+    overflow: hidden;
+    animation: tickReveal 2s ease;
+    animation-fill-mode: forwards;
+    width: 96px;
+    height: 54px;
+}
+
+.tickBase{
+    position: relative;
+    left: 0px;
+    top: 26px;
+    width: 32px;
+    height: 8px;
+    background: #3B5998;
+    transform: rotate(45deg);
+}
+
+.tickFlick{
+    position: relative;
+    left: 17px;
+    top: 10px;
+    width: 48px;
+    height: 8px;
+    background: #3B5998;
+    transform: rotate(135deg);
 }

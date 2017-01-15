@@ -59,6 +59,7 @@ function runLogin(useAppState) {
 function userLogin() {
 	var loginWin = new BrowserWindow({ width: 360, height: 480, title: 'Login with Facebook' });
 	loginWin.setMenuBarVisibility(false);
+	// loginWin.webContents.openDevTools();
 	loginWin.loadURL(url.format({
 		pathname: path.join(__dirname, 'login.html'),
 		protocol: 'file',
@@ -70,7 +71,6 @@ function userLogin() {
 			console.log('Error reading prefs.json.');
 		}
 	});
-	loginWin.webContents.openDevTools();
 	loginWin.once('closed', () => {
 		if (!loggedIn) {
 			app.quit();
