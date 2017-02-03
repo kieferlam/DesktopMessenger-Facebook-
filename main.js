@@ -1,12 +1,21 @@
 "use strict";
 
 const electron = require('electron');
-const {app, BrowserWindow, Tray, Menu, Dialog} = electron;
+//globalShortcut for global keyboard events for testing
+const {app, BrowserWindow, Tray, Menu, Dialog, globalShortcut} = electron;
 const url = require('url');
 const path = require('path');
 const fs = require('fs');
 
 const message_win_width = 360;
+
+const os = require('os');
+const isLinux = os.platform == 'linux';
+const isWindows = os.platform == 'win32';
+const isMac = os.platform == 'darwin';
+
+//TURN THIS OFF FOR DEPLOY
+const DEBUG_LOCAL_MODE = true;
 
 var ipc = electron.ipcMain;
 
@@ -17,6 +26,8 @@ var displayingMessages = [];
 
 var preloadedThreads = [];
 const preloadThreadAmount = 10;
+
+var workAreaSize = {};
 
 let tray = null;
 function makeTrayIcon(api) {
@@ -32,7 +43,23 @@ function makeTrayIcon(api) {
 	tray.setContextMenu(contextMenu)
 }
 
-app.on('ready', () => runLogin(true));
+app.on('ready', () => {
+	const ret = globalShortcut.register('CmdOrCtrl+M', ()=>{
+		handleMessage({
+			senderID: 'TestID',
+			body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus imperdiet tristique nunc in tristique. Etiam fringilla ligula magna, quis aliquam.',
+			threadID: 'TestThreadID',
+			messageID: 'TestMsgID',
+			attachments: [],
+			isGroup: false
+		});
+	});
+	runLogin(true);
+});
+
+app.on('before-quit', ()=>{
+	globalShortcut.unregisterAll();
+});
 
 function runLogin(useAppState) {
 
@@ -103,6 +130,7 @@ function userLogin() {
 
 function loginSuccess(api) {
 	const {width, height} = electron.screen.getPrimaryDisplay().workAreaSize;
+	workAreaSize = { width: width, height: height };
 	loggedIn = true;
 	makeTrayIcon(api);
 
@@ -116,88 +144,100 @@ function loginSuccess(api) {
 
 	api.listen((err, message) => {
 		if (err) return console.error(err);
-		console.log("New message from " + message.senderID + ": " + message.body);
+		handleMessage(api, message);
+	});
+}
 
-		var existingMessages = displayingMessages.filter((msg) => msg.message.threadID == message.threadID);
-		if (existingMessages.length > 0) {
-			console.log('Appending message to existing window.');
-			//Message already exists
-			var existingWin = existingMessages[0];
-			if (!existingWin.window.interacted) existingWin.window.restartCloseTimer();
+function handleMessage(api, message) {
+	console.log("New message from " + message.senderID + ": " + message.body);
+
+	var existingMessages = displayingMessages.filter((msg) => msg.message.threadID == message.threadID);
+	if (existingMessages.length > 0) {
+		console.log('Appending message to existing window.');
+		//Message already exists
+		var existingWin = existingMessages[0];
+		if (!existingWin.window.interacted) existingWin.window.restartCloseTimer();
+		api.getUserInfo(message.senderID, function (err, ret) {
+			if (err) return console.error(err);
+			var userInfo = { userID: message.senderID, message_data: message, data: ret[message.senderID] };
+			existingWin.window.webContents.send('anotherMessage', userInfo);
+		});
+	} else {
+		console.log('New message window.');
+		//Display new message
+		var newWin = new BrowserWindow({
+			width: message_win_width,
+			height: 128,
+			frame: false,
+			transparent: true,
+			resizable: false,
+			show: false,
+			icon: './img/ico24.png',
+			alwaysOnTop: true,
+			skipTaskbar: true
+		});
+		displayingMessages.push({ window: newWin, message: message });
+		newWin.setPosition(workAreaSize.width, workAreaSize.height - newWin.getPosition()[1]);
+		newWin.interacted = false;
+		var autoCloseRunning = false;
+		// newWin.webContents.openDevTools();
+
+		newWin.loadURL(url.format({
+			pathname: path.join(__dirname, 'incomingmessage.html'),
+			protocol: 'file',
+			slashes: true
+		}));
+
+		const animateCloseFunction = function () {
+			autoCloseRunning = true;
+			const closeAnim = animate(
+				0,
+				message_win_width,
+				300,
+				(val) => newWin.setPosition(Math.round(workAreaSize.width - (message_win_width - val)), newWin.getPosition()[1]),
+				(x, dur) => {
+					return Math.pow((0.003 * (1000 / dur) * x) + 1, -3);
+				},
+				() => newWin.close()
+			);
+		}
+
+		newWin.autoCloseTimeout = setTimeout(animateCloseFunction, 5000);
+
+		newWin.restartCloseTimer = function () {
+			clearTimeout(newWin.autoCloseTimeout);
+			newWin.autoCloseTimeout = setTimeout(animateCloseFunction, 5000);
+		}
+
+		newWin.forceAutoClose = function () {
+			if (!autoCloseRunning) {
+				clearTimeout(newWin.autoCloseTimeout);
+				animateCloseFunction();
+			}
+		}
+
+		ipc.once('messageInteracted', () => {
+			newWin.interacted = true;
+			clearTimeout(newWin.autoCloseTimeout);
+		});
+
+		ipc.once('messageDomReady', (event, arg) => {
 			api.getUserInfo(message.senderID, function (err, ret) {
 				if (err) return console.error(err);
-				var userInfo = { userID: message.senderID, message_data: message, data: ret[message.senderID] };
-				existingWin.window.webContents.send('anotherMessage', userInfo);
-			});
-		} else {
-			console.log('New message window.');
-			//Display new message
-			var newWin = new BrowserWindow({
-				width: message_win_width,
-				height: 128,
-				frame: false,
-				transparent: true
-			});
-			displayingMessages.push({ window: newWin, message: message });
-			newWin.setPosition(width, height - 128);
-			newWin.setAlwaysOnTop(true);
-			newWin.setSkipTaskbar(true);
-			newWin.interacted = false;
-			var autoCloseRunning = false;;
-			// newWin.webContents.openDevTools();
-
-			newWin.loadURL(url.format({
-				pathname: path.join(__dirname, 'incomingmessage.html'),
-				protocol: 'file',
-				slashes: true
-			}));
-
-			const animateCloseFunction = function () {
-				autoCloseRunning = true;
-				const closeAnim = animate(
-					0,
-					message_win_width,
-					300,
-					(val) => newWin.setPosition(Math.round(width - (message_win_width - val)), newWin.getPosition()[1]),
-					(x, dur) => {
-						return Math.pow((0.003 * (1000 / dur) * x) + 1, -3);
-					},
-					() => newWin.close()
-				);
-			}
-
-			newWin.autoCloseTimeout = setTimeout(animateCloseFunction, 5000);
-
-			newWin.restartCloseTimer = function () {
-				clearTimeout(newWin.autoCloseTimeout);
-				newWin.autoCloseTimeout = setTimeout(animateCloseFunction, 5000);
-			}
-
-			newWin.forceAutoClose = function () {
-				if (!autoCloseRunning) {
-					clearTimeout(newWin.autoCloseTimeout);
-					animateCloseFunction();
-				}
-			}
-
-			ipc.once('messageInteracted', () => {
-				newWin.interacted = true;
-				clearTimeout(newWin.autoCloseTimeout);
-			});
-
-			ipc.once('messageDomReady', (event, arg) => {
-				api.getUserInfo(message.senderID, function (err, ret) {
+				var userInfo = { userID: message.senderID, message: message, data: ret[message.senderID] };
+				api.getThreadInfo(message.threadID, (err, threadData) => {
 					if (err) return console.error(err);
-					var userInfo = { userID: message.senderID, message: message, data: ret[message.senderID] };
-					api.getThreadInfo(message.threadID, (err, threadData) => {
-						if (err) return console.error(err);
-						event.sender.send('initMessageDetails', threadData, userInfo);
-					});
+					event.sender.send('initMessageDetails', threadData, userInfo);
 				});
 			});
+		});
 
-			ipc.once('readyToDisplay', (event, arg) => {
-				console.log('Message window ready to display.');
+		ipc.once('readyToDisplay', (event, height) => {
+			console.log('Message window ready to display.');
+			newWin.setSize(newWin.getSize()[0], height);
+			newWin.setPosition(width, workAreaSize.height - height);
+			newWin.show();
+			if (newWin.slideInAnim != 0 && !isLinux) {
 				newWin.slideInAnim = animate(
 					0,
 					message_win_width,
@@ -205,17 +245,18 @@ function loginSuccess(api) {
 					(val) => newWin.setPosition(Math.round(width - val), newWin.getPosition()[1]),
 					(x, dur) => {
 						return Math.pow((0.003 * (1000 / dur) * x) + 1, -3);
-					}
+					},
+					() => newWin.slideInAnim = 0
 				);
-			});
+			}
+		});
 
-			newWin.once('close', () => {
-				console.log('Message window closed.');
-				displayingMessages.splice(displayingMessages.indexOf(newWin));
-			});
+		newWin.once('close', () => {
+			console.log('Message window closed.');
+			displayingMessages.splice(displayingMessages.indexOf(newWin));
+		});
 
-		}
-	});
+	}
 }
 
 ipc.on('message_close', (event, arg) => {
@@ -232,16 +273,16 @@ ipc.on('console.log', (event, arg) => {
 function animate(start, end, duration, stepFunction, timingFunction, callbackFunction = () => { }) {
 	const startTime = Date.now();
 	const deltaValue = end - start;
-	var callback = false;
 	const loop = setInterval(() => {
 		var deltaTime = Date.now() - startTime;
-		if (deltaTime >= duration) {
-			callback = true;
+		if (deltaTime >= duration || Math.abs(end - start) < 0.001) {
 			clearInterval(loop);
 			deltaTime = duration;
+			stepFunction(end);
+			callbackFunction();
+		} else {
+			stepFunction(start + ((1 - timingFunction(deltaTime, duration)) * deltaValue));
 		}
-		stepFunction(start + ((1 - timingFunction(deltaTime, duration)) * deltaValue));
-		if (callback) callbackFunction();
 	}, 10);
 	return loop;
 }
@@ -254,6 +295,27 @@ ipc.on('pollPreloadedThreads', (event, args) => {
 		}
 	});
 	event.sender.send('preloadedThreadInfo', null);
+});
+
+ipc.on('resizeHeight', (event, height) => {
+	displayingMessages.filter((elem) => elem.window.webContents == event.sender.webContents).forEach((elem, index) => {
+		var originalHeight = elem.window.getSize()[1];
+		elem.window.setSize(elem.window.getSize()[0], height);
+		animate(
+			originalHeight,
+			height,
+			300,
+			(val) => {
+				try { elem.window.setPosition(elem.window.getPosition()[0], workAreaSize.height - Math.round(val)); }
+				catch (e) {
+					console.log(e);
+				}
+			},
+			(x, dur) => {
+				return Math.pow((0.003 * (1000 / dur) * x) + 1, -3);
+			}
+		);
+	});
 });
 
 app.on('window-all-closed', () => { });

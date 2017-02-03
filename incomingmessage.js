@@ -28,17 +28,30 @@ ipc.once('initMessageDetails', (event, threadinfo, userInfo) => {
         var sender_name = userInfo.data.name + ((userInfo.data.alternateName != undefined) ? ' (' + userInfo.data.alternateName + ')' : '');
         $('#sender_name').text(userInfo.data.isGroup ? sender_name:'');
         appendMessage(userInfo.message);
-        event.sender.send('readyToDisplay');
+        event.sender.send('readyToDisplay', $('body').height());
     });
 });
 
 ipc.on('anotherMessage', (event, userInfo) => {
     mainLog('Appending message.');
     appendMessage(userInfo.message_data);
+    event.sender.send('resizeHeight', $('body').height());
 });
 
 function appendMessage(message) {
-    $('#message_container').append('<p id="message_body">' + message.body + '</p>');
+    $('#messages_container').append('<div class="message-container">' + sender_img_html(message) + timestamp_html() + message_html(message) + '</div>');
+}
+
+function sender_img_html(message){
+    return '';
+}
+
+function message_html(message){
+    return '<p class="message-body">' + message.body + '</p>';
+}
+
+function timestamp_html(){
+    return '<p class="timestamp">13:50 </p>';
 }
 
 $('#close_button').click(() => {

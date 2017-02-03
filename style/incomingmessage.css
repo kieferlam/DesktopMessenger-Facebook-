@@ -10,9 +10,14 @@
     color: white;
 }
 
+body{
+    overflow: hidden;
+}
+
 #content-div{
     width: 100vw;
-    height: 100vh;
+    min-height: 100vh;
+    height: 100%;
     border-radius: 10px 0px 0px 0px;
     background: rgba(0, 0, 0, 0.8);
 }
@@ -24,9 +29,10 @@
 
 header{
     height: 56px;
+    overflow: hidden;
 }
 
-#sender_pic{
+#thread_pic{
     width: 48px;
     height: 48px;
     border-radius: 1000px;
@@ -46,6 +52,9 @@ header{
     padding-top: 28px;
     line-height: 0px;
     font-weight: normal;
+    word-wrap: break-word;
+    height: calc(28px + 14pt);
+    overflow: hidden;
 }
 
 #sender_name{
@@ -61,9 +70,9 @@ header{
     position: absolute;
     width: 24px;
     height: 24px;
-    left: calc(100vw - 26px);
+    left: calc(100vw - 24px);
     top: 0px;
-    border-radius: 1000px;
+    border-radius: 0px 0px 0px 10px;
     border: none;
     background-color: rgb(20, 20,20, 0.02);
     background-image: url('../img/ico_close.png');
@@ -91,4 +100,37 @@ header{
     background-position: 4px 4px;
     background-repeat: no-repeat;
     background-size: 24px 24px;
+    transition: box-shadow 200ms ease-out;
+}
+
+#reply_button:hover{
+    box-shadow: 0px 4px 5px #000000;
+}
+
+#messages_container{
+    display: inline-block;
+    width: 100vw;
+    overflow: hidden;
+    
+}
+
+.message-container{
+    display:block;
+
+}
+
+.sender-image{
+    display: block;
+}
+
+.timestamp{
+    display: inline-block;
+    text-align: right;
+    color: #CCC;
+    margin-left: 4px;
+}
+
+.message-body{
+    display: inline-block;
+    padding-left: 20px;
 }
