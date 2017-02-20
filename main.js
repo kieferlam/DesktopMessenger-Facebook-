@@ -323,16 +323,25 @@ function animate(start, end, duration, stepFunction, timingFunction, callbackFun
 			deltaTime = duration;
 			try{
 				stepFunction(end);
-				callbackFunction();
 			}catch(e){
-				console.log('Error in animate, ending function, interval ' + loop + '.');
-				clearInterval(loop);
+				console.log('Error in animate, step function (end).');
+				console.log(e);
+			}finally{
+				try{
+					callbackFunction();
+				}catch(e2){
+					console.log('Error in animate, callback function.');
+					console.log(e2);
+				}finally{
+					clearInterval(loop);
+				}
 			}
 		} else {
 			try{
 				stepFunction(start + ((1 - timingFunction(deltaTime, duration)) * deltaValue));
 			}catch(e){
-				console.log('Error in animate, step function, interval ' + loop + '.');
+				console.log('Error in animate, step function.');
+				console.log(e);
 				clearInterval(loop);
 			}
 		}
