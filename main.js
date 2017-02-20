@@ -67,6 +67,16 @@ app.on('ready', () => {
 				isGroup: false
 			});
 		});
+		const debugMsg3 = globalShortcut.register('CmdOrCtrl+H', () => {
+			handleMessage(null, {
+				senderID: 'TestID3',
+				body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus imperdiet tristique nunc in tristique. Etiam fringilla ligula magna, quis aliquam.',
+				threadID: 'TestThreadID3',
+				messageID: 'TestMsgID3',
+				attachments: [],
+				isGroup: false
+			});
+		});
 	}
 	runLogin(true);
 });
@@ -187,6 +197,16 @@ function loginSuccess(api) {
 	});
 }
 
+function calculateWinHeights(curr = 999) {
+	var currentHeight = 0;
+	displayingMessages.forEach((elem, index) => {
+		if (index < curr) {
+			currentHeight += elem.window.getSize()[1];
+		}
+	});
+	return currentHeight;
+}
+
 function handleMessage(api, message) {
 	console.log("New message from " + message.senderID + ": " + message.body);
 
@@ -217,8 +237,9 @@ function handleMessage(api, message) {
 			alwaysOnTop: true,
 			skipTaskbar: true
 		});
-		displayingMessages.push({ window: newWin, message: message, api: api });
-		newWin.setPosition(workAreaSize.width, workAreaSize.height - newWin.getPosition()[1]);
+		newWin.setPosition(workAreaSize.width, workAreaSize.height - newWin.getPosition()[1] - calculateWinHeights());
+		var msgWinObj = { window: newWin, message: message, api: api };
+		displayingMessages.push(msgWinObj);
 		newWin.interacted = false;
 		var autoCloseRunning = false;
 		// newWin.webContents.openDevTools();
@@ -279,7 +300,7 @@ function handleMessage(api, message) {
 			console.log('Message window ready to display with height of ' + height);
 			if (height > quickMessageMaxHeight) height = quickMessageMaxHeight;
 			newWin.setSize(newWin.getSize()[0], height);
-			newWin.setPosition(workAreaSize.width, workAreaSize.height - height);
+			newWin.setPosition(workAreaSize.width, workAreaSize.height - height - calculateWinHeights(displayingMessages.length - 1));
 			newWin.show();
 			if (newWin.slideInAnim != 0 && !isLinux) {
 				newWin.slideInAnim = animate(
@@ -296,8 +317,8 @@ function handleMessage(api, message) {
 		});
 
 		newWin.once('close', () => {
-			console.log('Message window closed.');
-			displayingMessages.splice(displayingMessages.indexOf(newWin));
+			console.log('Message window (' + displayingMessages.indexOf(msgWinObj) + ') closed.');
+			displayingMessages.splice(displayingMessages.indexOf(msgWinObj), 1);
 		});
 
 	}
@@ -321,25 +342,25 @@ function animate(start, end, duration, stepFunction, timingFunction, callbackFun
 		var deltaTime = Date.now() - startTime;
 		if (deltaTime >= duration || Math.abs(end - start) < 0.001) {
 			deltaTime = duration;
-			try{
+			try {
 				stepFunction(end);
-			}catch(e){
+			} catch (e) {
 				console.log('Error in animate, step function (end).');
 				console.log(e);
-			}finally{
-				try{
+			} finally {
+				try {
 					callbackFunction();
-				}catch(e2){
+				} catch (e2) {
 					console.log('Error in animate, callback function.');
 					console.log(e2);
-				}finally{
+				} finally {
 					clearInterval(loop);
 				}
 			}
 		} else {
-			try{
+			try {
 				stepFunction(start + ((1 - timingFunction(deltaTime, duration)) * deltaValue));
-			}catch(e){
+			} catch (e) {
 				console.log('Error in animate, step function.');
 				console.log(e);
 				clearInterval(loop);
@@ -374,7 +395,14 @@ ipc.on('resizeHeight', (event, height) => {
 			height,
 			300,
 			(val) => {
-				try { elem.window.setPosition(elem.window.getPosition()[0], workAreaSize.height - Math.round(val)); }
+				try {
+					elem.window.setPosition(elem.window.getPosition()[0], workAreaSize.height - Math.round(val) - calculateWinHeights(index));
+					displayingMessages.forEach((elem2, dex)=>{
+						if(dex > index){
+							elem2.window.setPosition(elem2.window.getPosition()[0], workAreaSize.height - Math.round(val) - calculateWinHeights(dex));
+						}
+					});
+				}
 				catch (e) {
 					console.log('Error on resize animation. Clearning animation interval.');
 					clearInterval(resizeAnim);
