@@ -1,6 +1,6 @@
 {
   "name": "kiefermessenger",
-  "version": "0.0.0",
+  "version": "0.1.4",
   "description": "Desktop app integrated with Facebook Messenger",
   "main": "main.js",
   "scripts": {

@@ -16,6 +16,7 @@ const isMac = os.platform == 'darwin';
 
 //TURN THIS OFF FOR DEPLOY
 const DEBUG_LOCAL_MODE = true;
+global.DEBUG_LOCAL_MODE = DEBUG_LOCAL_MODE;
 
 var ipc = electron.ipcMain;
 
@@ -28,6 +29,7 @@ var preloadedThreads = [];
 const preloadThreadAmount = 10;
 
 var workAreaSize = {};
+var quickMessageMaxHeight;
 
 let tray = null;
 function makeTrayIcon(api) {
@@ -37,54 +39,65 @@ function makeTrayIcon(api) {
 		{ type: 'separator' },
 		{ label: 'Quit', type: 'normal' }
 	])
-	contextMenu.items[0].click = () => api.logout(() => app.quit());
+	if (!DEBUG_LOCAL_MODE) contextMenu.items[0].click = () => api.logout(() => app.quit());
 	contextMenu.items[2].click = () => app.quit();
 	tray.setToolTip('Kiefer Messenger')
 	tray.setContextMenu(contextMenu)
 }
 
 app.on('ready', () => {
-	const ret = globalShortcut.register('CmdOrCtrl+M', ()=>{
-		handleMessage({
-			senderID: 'TestID',
-			body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus imperdiet tristique nunc in tristique. Etiam fringilla ligula magna, quis aliquam.',
-			threadID: 'TestThreadID',
-			messageID: 'TestMsgID',
-			attachments: [],
-			isGroup: false
+	if (DEBUG_LOCAL_MODE) {
+		const ret = globalShortcut.register('CmdOrCtrl+M', () => {
+			handleMessage(null, {
+				senderID: 'TestID',
+				body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus imperdiet tristique nunc in tristique. Etiam fringilla ligula magna, quis aliquam.',
+				threadID: 'TestThreadID',
+				messageID: 'TestMsgID',
+				attachments: [],
+				isGroup: false
+			});
 		});
-	});
+	}
 	runLogin(true);
 });
 
-app.on('before-quit', ()=>{
+app.on('before-quit', () => {
 	globalShortcut.unregisterAll();
 });
 
 function runLogin(useAppState) {
 
-	if (useAppState) {
-		try {
-			login({ appState: JSON.parse(fs.readFileSync('appstate.json', 'utf8')) }, (err, api) => {
-				if (err) {
-					console.error(err);
-					runLogin(false);
-				} else {
-					loginSuccess(api);
-				}
-			});
-		} catch (e) {
-			console.error(e);
-			runLogin(false);
-		}
-
-	} else {
-		userLogin();
+	if (DEBUG_LOCAL_MODE) {
+		console.log('Debug mode. Skipping login.');
+		loginSuccess(null);
 	}
+	else {
+		if (useAppState) {
+			try {
+				login({ appState: JSON.parse(fs.readFileSync('appstate.json', 'utf8')) }, (err, api) => {
+					if (err) {
+						console.log('Appstate login error.');
+						console.error(err);
+						runLogin(false);
+					} else {
+						loginSuccess(api);
+					}
+				});
+			} catch (e) {
+				console.error(e);
+				runLogin(false);
+			}
+
+		} else {
+			userLogin();
+		}
+	}
+
+
 }
 
 function userLogin() {
-	var loginWin = new BrowserWindow({ width: 360, height: 480, title: 'Login with Facebook' });
+	var loginWin = new BrowserWindow({ width: 360, height: 540, title: 'Login with Facebook' });
 	loginWin.setMenuBarVisibility(false);
 	// loginWin.webContents.openDevTools();
 	loginWin.loadURL(url.format({
@@ -94,7 +107,7 @@ function userLogin() {
 	}));
 	ipc.on('loginDomReady', (event, data) => {
 		try { event.sender.send('setLastLogin', JSON.parse(fs.readFileSync('./prefs.json'))); } catch (e) {
-			console.err(e);
+			console.error(e);
 			console.log('Error reading prefs.json.');
 		}
 	});
@@ -104,13 +117,27 @@ function userLogin() {
 		}
 	});
 	ipc.on('loginWithDetails', (event, data) => {
-		console.log('Loggin in with ' + data.email);
-		login({ email: data.email, password: data.password }, (err, api) => {
+		console.log('Logging in with ' + data.email);
+		login({ email: data.email, password: data.password }, { forceLogin: true }, (err, api) => {
 			if (err) {
 				console.log('Login error.');
-				event.sender.send('loginError', err);
-				return console.error(err);
+
+				if (err.error == 'login-approval') {
+					if (data.auth == '') {
+						console.log('No auth code.');
+						err.error = 'Please enter authentication code.';
+						event.sender.send('loginError', err);
+						return console.error(err);
+					} else {
+						console.log('Logging in with auth code.');
+						err.continue(data.auth);
+					}
+				} else {
+					event.sender.send('loginError', err);
+					return console.error(err);
+				}
 			}
+
 			//Save email
 			fs.writeFileSync('prefs.json', JSON.stringify({ lastLoginEmail: data.email }));
 			console.log('Login success!');
@@ -131,18 +158,20 @@ function userLogin() {
 function loginSuccess(api) {
 	const {width, height} = electron.screen.getPrimaryDisplay().workAreaSize;
 	workAreaSize = { width: width, height: height };
+	quickMessageMaxHeight = Math.floor(workAreaSize.height * 0.3);
 	loggedIn = true;
 	makeTrayIcon(api);
 
 	//Preload thread data
-	api.getThreadList(0, preloadThreadAmount - 1, (err, arr) => {
+	if (!DEBUG_LOCAL_MODE) api.getThreadList(0, preloadThreadAmount - 1, (err, arr) => {
 		if (err) return console.error(err);
 		arr.forEach((elem, index) => {
 			preloadedThreads.push(elem);
 		});
+		console.log('Preloaded ' + preloadedThreads.length + ' threads.');
 	});
 
-	api.listen((err, message) => {
+	if (!DEBUG_LOCAL_MODE) api.listen((err, message) => {
 		if (err) return console.error(err);
 		handleMessage(api, message);
 	});
@@ -157,11 +186,13 @@ function handleMessage(api, message) {
 		//Message already exists
 		var existingWin = existingMessages[0];
 		if (!existingWin.window.interacted) existingWin.window.restartCloseTimer();
-		api.getUserInfo(message.senderID, function (err, ret) {
+		if (!DEBUG_LOCAL_MODE) api.getUserInfo(message.senderID, function (err, ret) {
 			if (err) return console.error(err);
 			var userInfo = { userID: message.senderID, message_data: message, data: ret[message.senderID] };
 			existingWin.window.webContents.send('anotherMessage', userInfo);
 		});
+		else
+			existingWin.window.webContents.send('anotherMessage', { userID: message.senderID, message_data: message });
 	} else {
 		console.log('New message window.');
 		//Display new message
@@ -176,7 +207,7 @@ function handleMessage(api, message) {
 			alwaysOnTop: true,
 			skipTaskbar: true
 		});
-		displayingMessages.push({ window: newWin, message: message });
+		displayingMessages.push({ window: newWin, message: message, api: api });
 		newWin.setPosition(workAreaSize.width, workAreaSize.height - newWin.getPosition()[1]);
 		newWin.interacted = false;
 		var autoCloseRunning = false;
@@ -222,7 +253,7 @@ function handleMessage(api, message) {
 		});
 
 		ipc.once('messageDomReady', (event, arg) => {
-			api.getUserInfo(message.senderID, function (err, ret) {
+			if (!DEBUG_LOCAL_MODE) api.getUserInfo(message.senderID, function (err, ret) {
 				if (err) return console.error(err);
 				var userInfo = { userID: message.senderID, message: message, data: ret[message.senderID] };
 				api.getThreadInfo(message.threadID, (err, threadData) => {
@@ -230,19 +261,22 @@ function handleMessage(api, message) {
 					event.sender.send('initMessageDetails', threadData, userInfo);
 				});
 			});
+			else
+				event.sender.send('initMessageDetails', {}, { message: message });
 		});
 
 		ipc.once('readyToDisplay', (event, height) => {
-			console.log('Message window ready to display.');
+			console.log('Message window ready to display with height of ' + height);
+			if (height > quickMessageMaxHeight) height = quickMessageMaxHeight;
 			newWin.setSize(newWin.getSize()[0], height);
-			newWin.setPosition(width, workAreaSize.height - height);
+			newWin.setPosition(workAreaSize.width, workAreaSize.height - height);
 			newWin.show();
 			if (newWin.slideInAnim != 0 && !isLinux) {
 				newWin.slideInAnim = animate(
 					0,
 					message_win_width,
 					300,
-					(val) => newWin.setPosition(Math.round(width - val), newWin.getPosition()[1]),
+					(val) => newWin.setPosition(Math.round(workAreaSize.width - val), newWin.getPosition()[1]),
 					(x, dur) => {
 						return Math.pow((0.003 * (1000 / dur) * x) + 1, -3);
 					},
@@ -300,7 +334,13 @@ ipc.on('pollPreloadedThreads', (event, args) => {
 ipc.on('resizeHeight', (event, height) => {
 	displayingMessages.filter((elem) => elem.window.webContents == event.sender.webContents).forEach((elem, index) => {
 		var originalHeight = elem.window.getSize()[1];
-		elem.window.setSize(elem.window.getSize()[0], height);
+		console.log('Resizing window height from ' + originalHeight + ' to ' + height + '.');
+		if (height > quickMessageMaxHeight) {
+			height = quickMessageMaxHeight;
+			elem.window.setPosition(workAreaSize.width - message_win_width - 16, elem.window.getPosition()[1]);
+			elem.window.setSize(message_win_width + 16, elem.window.getSize()[1]);
+		}
+		elem.window.setSize(elem.window.getSize()[0], Math.round(height));
 		animate(
 			originalHeight,
 			height,
@@ -315,6 +355,15 @@ ipc.on('resizeHeight', (event, height) => {
 				return Math.pow((0.003 * (1000 / dur) * x) + 1, -3);
 			}
 		);
+	});
+});
+
+ipc.on('apiSend', (event, msg) => {
+	displayingMessages.filter((elem) => elem.window.webContents == event.sender.webContents).forEach((elem, index) => {
+		console.log('Sending api message.');
+		elem.api.sendMessage(msg.body, msg.thread, (err, msgInfo) => {
+			event.sender.send('apiSendCallback', err, msgInfo);
+		});
 	});
 });
 

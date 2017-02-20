@@ -37,6 +37,7 @@ $('#login-button').click(() => {
         
         var textIndex = 0;
         var text = $('#email-field').val();
+        var auth = $('#auth-field').val();
         textfillInterval = setInterval(() => {
             $('#screenContent').append('<span class="loadingChar">' + text[textIndex] + '</span>');
             if (textIndex > 5) $('#screenContent').find('span:first').remove();
@@ -44,7 +45,7 @@ $('#login-button').click(() => {
             if (textIndex >= text.length) clearInterval(textfillInterval);
         }, 100);
 
-        ipc.send('loginWithDetails', { email: $('#email-field').val(), password: $('#password-field').val() });
+        ipc.send('loginWithDetails', { email: $('#email-field').val(), password: $('#password-field').val(), auth: auth });
     }
 });
 

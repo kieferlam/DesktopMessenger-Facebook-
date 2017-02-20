@@ -8,18 +8,27 @@
     padding:0;
     font-family: font-main;
     color: white;
+    /*border: 1px solid red;*/
 }
 
 body{
-    overflow: hidden;
+    overflow: auto;
+    overflow-x: hidden;
+    width: 360px;
+    height: 100%;
 }
 
 #content-div{
-    width: 100vw;
+    width: 100%;
     min-height: 100vh;
-    height: 100%;
     border-radius: 10px 0px 0px 0px;
     background: rgba(0, 0, 0, 0.8);
+}
+
+.clearfix:after {
+  content: "";
+  display: table;
+  clear: both;
 }
 
 .translucent{
@@ -30,6 +39,10 @@ body{
 header{
     height: 56px;
     overflow: hidden;
+}
+
+#message-main{
+    height: 50vh;
 }
 
 #thread_pic{
@@ -70,7 +83,7 @@ header{
     position: absolute;
     width: 24px;
     height: 24px;
-    left: calc(100vw - 24px);
+    left: calc(100% - 24px);
     top: 0px;
     border-radius: 0px 0px 0px 10px;
     border: none;
@@ -88,11 +101,10 @@ header{
 }
 
 #reply_button{
-    position: absolute;
-    top: calc(100vh - 40px);
-    left: calc(100vw - 40px);
     width: 32px;
     height: 32px;
+    float:right;
+
     border: none;
     border-radius: 1000px;
     background-color: #2196F3;
@@ -108,15 +120,25 @@ header{
 }
 
 #messages_container{
-    display: inline-block;
-    width: 100vw;
+    width: 100%;
     overflow: hidden;
-    
 }
 
 .message-container{
     display:block;
+}
 
+.user-message-container{
+    display: block;
+    width: 70%;
+    float: right;
+    margin: 4px;
+}
+
+.user-message-body{
+    display: block;
+    text-align: right;
+    word-wrap: break-word;
 }
 
 .sender-image{
@@ -130,7 +152,65 @@ header{
     margin-left: 4px;
 }
 
+.userTimestamp{
+    text-align: right;
+    color: #CCC;
+    margin-right: 4px;
+    width: 100%;
+}
+
 .message-body{
     display: inline-block;
     padding-left: 20px;
+}
+
+#reply-div{
+    height: 24px;
+    margin-top: 8px;
+}
+
+#reply_message{
+    display: inline-block;
+    width: calc(100% - 48px);
+    margin: 1px;
+    border-radius: 4px;
+    border-width: 1px;
+    background: transparent;
+    resize: none;
+    overflow: auto;
+    font-size: 12pt;
+    line-height: 16px;
+    padding: 0px 4px;
+    clear: both;
+}
+
+#reply_send{
+    width: 24px;
+    height: 24px;
+    float: right;
+
+    padding: 0px;
+    margin: 6px;
+
+    vertical-align: bottom;
+
+    border: none;
+    border-radius: 1000px;
+    background-color: #2196F3;
+    background-image: url('../img/ico_done.png');
+    background-position: 2px 2px;
+    background-repeat: no-repeat;
+    background-size: 20px 20px;
+}
+
+.unsent{
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.sendError{
+    color: rgba(255, 0, 0, 0.8);
+}
+
+.clear-br{
+    clear:both;
 }
