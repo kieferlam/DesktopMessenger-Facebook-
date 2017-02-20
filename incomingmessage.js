@@ -66,8 +66,12 @@ function message_html(message){
     return '<p class="message-body">' + message.body + '</p>';
 }
 
+function sender_name(){
+    
+}
+
 function timestamp_html(date){
-    return '<p class="timestamp">' + ('0' + date.getHours()).slice(-2) + ':' + ('0' + date.getMinutes()).slice(-2) + '</p>';
+    return '<p class="timestamp">' + ('0' + date.getHours()).slice(-2) + ':' + ('0' + date.getMinutes()).slice(-2) + ' ' + sender_name() + '</p>';
 }
 
 function userTimestamp(date, timestampId){

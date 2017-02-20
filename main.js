@@ -237,8 +237,9 @@ function handleMessage(api, message) {
 			alwaysOnTop: true,
 			skipTaskbar: true
 		});
-		newWin.setPosition(workAreaSize.width, workAreaSize.height - newWin.getPosition()[1] - calculateWinHeights());
+		newWin.isDisplaying = false;
 		var msgWinObj = { window: newWin, message: message, api: api };
+		newWin.setPosition(workAreaSize.width, workAreaSize.height - newWin.getPosition()[1] - calculateWinHeights());
 		displayingMessages.push(msgWinObj);
 		newWin.interacted = false;
 		var autoCloseRunning = false;
@@ -300,8 +301,9 @@ function handleMessage(api, message) {
 			console.log('Message window ready to display with height of ' + height);
 			if (height > quickMessageMaxHeight) height = quickMessageMaxHeight;
 			newWin.setSize(newWin.getSize()[0], height);
-			newWin.setPosition(workAreaSize.width, workAreaSize.height - height - calculateWinHeights(displayingMessages.length - 1));
+			newWin.setPosition(workAreaSize.width, workAreaSize.height - height - calculateWinHeights(displayingMessages.indexOf(msgWinObj)));
 			newWin.show();
+			newWin.isDisplaying = true;
 			if (newWin.slideInAnim != 0 && !isLinux) {
 				newWin.slideInAnim = animate(
 					0,
@@ -321,6 +323,7 @@ function handleMessage(api, message) {
 			displayingMessages.splice(displayingMessages.indexOf(msgWinObj), 1);
 		});
 
+		console.log('Finished setting up.');
 	}
 }
 
@@ -397,8 +400,8 @@ ipc.on('resizeHeight', (event, height) => {
 			(val) => {
 				try {
 					elem.window.setPosition(elem.window.getPosition()[0], workAreaSize.height - Math.round(val) - calculateWinHeights(index));
-					displayingMessages.forEach((elem2, dex)=>{
-						if(dex > index){
+					displayingMessages.forEach((elem2, dex) => {
+						if (dex > index) {
 							elem2.window.setPosition(elem2.window.getPosition()[0], workAreaSize.height - Math.round(val) - calculateWinHeights(dex));
 						}
 					});
