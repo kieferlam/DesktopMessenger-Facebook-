@@ -47,12 +47,22 @@ function makeTrayIcon(api) {
 
 app.on('ready', () => {
 	if (DEBUG_LOCAL_MODE) {
-		const ret = globalShortcut.register('CmdOrCtrl+M', () => {
+		const debugMsg1 = globalShortcut.register('CmdOrCtrl+M', () => {
 			handleMessage(null, {
 				senderID: 'TestID',
 				body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus imperdiet tristique nunc in tristique. Etiam fringilla ligula magna, quis aliquam.',
 				threadID: 'TestThreadID',
 				messageID: 'TestMsgID',
+				attachments: [],
+				isGroup: false
+			});
+		});
+		const debugMsg2 = globalShortcut.register('CmdOrCtrl+L', () => {
+			handleMessage(null, {
+				senderID: 'TestID2',
+				body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus imperdiet tristique nunc in tristique. Etiam fringilla ligula magna, quis aliquam.',
+				threadID: 'TestThreadID2',
+				messageID: 'TestMsgID2',
 				attachments: [],
 				isGroup: false
 			});
@@ -307,15 +317,24 @@ ipc.on('console.log', (event, arg) => {
 function animate(start, end, duration, stepFunction, timingFunction, callbackFunction = () => { }) {
 	const startTime = Date.now();
 	const deltaValue = end - start;
-	const loop = setInterval(() => {
+	var loop = setInterval(() => {
 		var deltaTime = Date.now() - startTime;
 		if (deltaTime >= duration || Math.abs(end - start) < 0.001) {
-			clearInterval(loop);
 			deltaTime = duration;
-			stepFunction(end);
-			callbackFunction();
+			try{
+				stepFunction(end);
+				callbackFunction();
+			}catch(e){
+				console.log('Error in animate, ending function, interval ' + loop + '.');
+				clearInterval(loop);
+			}
 		} else {
-			stepFunction(start + ((1 - timingFunction(deltaTime, duration)) * deltaValue));
+			try{
+				stepFunction(start + ((1 - timingFunction(deltaTime, duration)) * deltaValue));
+			}catch(e){
+				console.log('Error in animate, step function, interval ' + loop + '.');
+				clearInterval(loop);
+			}
 		}
 	}, 10);
 	return loop;
@@ -341,14 +360,15 @@ ipc.on('resizeHeight', (event, height) => {
 			elem.window.setSize(message_win_width + 16, elem.window.getSize()[1]);
 		}
 		elem.window.setSize(elem.window.getSize()[0], Math.round(height));
-		animate(
+		var resizeAnim = animate(
 			originalHeight,
 			height,
 			300,
 			(val) => {
 				try { elem.window.setPosition(elem.window.getPosition()[0], workAreaSize.height - Math.round(val)); }
 				catch (e) {
-					console.log(e);
+					console.log('Error on resize animation. Clearning animation interval.');
+					clearInterval(resizeAnim);
 				}
 			},
 			(x, dur) => {
