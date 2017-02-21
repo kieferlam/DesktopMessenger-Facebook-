@@ -1,5 +1,12 @@
 # KieferMessenger
 
+## What is it?
+KieferMessenger is a desktop client for the Facebook Messenger platform. It works by emulating the browser and using the exact same GET/POST requests to trick Facebook into thinking we are accessing the website normally[*](https://github.com/Schmavery/facebook-chat-api).
+
+KieferMessenger is currently beta software so expect bugs and incomplete functionality. Feel free to report bugs/suggestions here on GitHub.
+
+*Disclaimer*: We are not resposible for anything that happens to your account, e.g. account getting banned. KieferMessenger does not store your password at all so any security problems will be unrelated to us or our software.
+
 ## Install
 To install, simply download the ZIP file (KieferMessenger.zip) from /release/ and run KieferMessenger.exe after you extract the ZIP file. 
 The executable will prompt may prompt you to download an update which will download the latest version of the app.
