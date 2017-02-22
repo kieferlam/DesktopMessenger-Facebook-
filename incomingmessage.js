@@ -14,6 +14,8 @@ var oldScrollHeight = 0;
 
 var threadId;
 
+var completeData;
+
 $(document).ready(() => {
     ipc.send('messageDomReady');
     $('#content-div').addClass('translucent');
@@ -28,6 +30,7 @@ $(document).click(() => {
 ipc.once('initMessageDetails', (event, threadinfo, userInfo) => {
     mainLog('Initial message update.');
     threadId = userInfo.message.threadID;
+    completeData = {threadInfo: threadinfo, userInfo: userInfo, message: userInfo.message};
     if(!DEBUG_LOCAL_MODE) {
         event.sender.send('pollPreloadedThreads', userInfo.message.threadID);
         ipc.once('preloadedThreadInfo', (event, threadData)=>{
@@ -67,7 +70,11 @@ function message_html(message){
 }
 
 function sender_name(){
-    
+    if(completeData.message.isGroup){
+        var nick = completeData.threadInfo.nicknames[completeData.message.senderID.toString()];
+        if(nick != null) return nick + ' (' + completeData.userInfo.data.name + ') ';
+    }
+    return completeData.userInfo.data.name;
 }
 
 function timestamp_html(date){
@@ -125,7 +132,7 @@ $('#reply_button').click(()=>{
                 }
             });
         }
-        
+        resize();
     });
     resize();
 });

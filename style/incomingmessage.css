@@ -146,8 +146,8 @@ header{
 }
 
 .timestamp{
-    display: inline-block;
-    text-align: right;
+    display: block;
+    text-align: left;
     color: #CCC;
     margin-left: 4px;
 }

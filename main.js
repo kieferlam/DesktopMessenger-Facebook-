@@ -15,7 +15,7 @@ const isWindows = os.platform == 'win32';
 const isMac = os.platform == 'darwin';
 
 //TURN THIS OFF FOR DEPLOY
-const DEBUG_LOCAL_MODE = true;
+const DEBUG_LOCAL_MODE = false;
 global.DEBUG_LOCAL_MODE = DEBUG_LOCAL_MODE;
 
 var ipc = electron.ipcMain;
@@ -178,7 +178,7 @@ function userLogin() {
 function loginSuccess(api) {
 	const {width, height} = electron.screen.getPrimaryDisplay().workAreaSize;
 	workAreaSize = { width: width, height: height };
-	quickMessageMaxHeight = Math.floor(workAreaSize.height * 0.3);
+	quickMessageMaxHeight = Math.floor(workAreaSize.height * (1.0/3.0));
 	loggedIn = true;
 	makeTrayIcon(api);
 
@@ -285,6 +285,7 @@ function handleMessage(api, message) {
 		});
 
 		ipc.once('messageDomReady', (event, arg) => {
+			console.log('Message DOM ready.');
 			if (!DEBUG_LOCAL_MODE) api.getUserInfo(message.senderID, function (err, ret) {
 				if (err) return console.error(err);
 				var userInfo = { userID: message.senderID, message: message, data: ret[message.senderID] };
@@ -300,6 +301,7 @@ function handleMessage(api, message) {
 		ipc.once('readyToDisplay', (event, height) => {
 			console.log('Message window ready to display with height of ' + height);
 			if (height > quickMessageMaxHeight) height = quickMessageMaxHeight;
+			console.log(newWin);
 			newWin.setSize(newWin.getSize()[0], height);
 			newWin.setPosition(workAreaSize.width, workAreaSize.height - height - calculateWinHeights(displayingMessages.indexOf(msgWinObj)));
 			newWin.show();
