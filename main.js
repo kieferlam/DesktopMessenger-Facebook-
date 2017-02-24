@@ -320,10 +320,6 @@ function handleMessage(api, message) {
 				}
 			} catch (e) {
 				console.error(e);
-				console.log('Window object: ');
-				console.log(newWin);
-				console.log('Window webContents: ');
-				console.log(newWin.webContents);
 			}
 		});
 

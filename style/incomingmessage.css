@@ -130,8 +130,7 @@ header{
 
 .user-message-container{
     display: block;
-    width: 70%;
-    float: right;
+    width: calc(100% - 8px);
     margin: 4px;
 }
 
@@ -160,7 +159,9 @@ header{
 }
 
 .message-body{
-    display: inline-block;
+    display: block;
+    width: 80%;
+    text-align: left;
     padding-left: 20px;
 }
 
