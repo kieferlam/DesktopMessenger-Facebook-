@@ -178,7 +178,7 @@ function userLogin() {
 function loginSuccess(api) {
 	const {width, height} = electron.screen.getPrimaryDisplay().workAreaSize;
 	workAreaSize = { width: width, height: height };
-	quickMessageMaxHeight = Math.floor(workAreaSize.height * (1.0/3.0));
+	quickMessageMaxHeight = Math.floor(workAreaSize.height * (1.0 / 3.0));
 	loggedIn = true;
 	makeTrayIcon(api);
 
@@ -299,24 +299,31 @@ function handleMessage(api, message) {
 		});
 
 		ipc.once('readyToDisplay', (event, height) => {
-			console.log('Message window ready to display with height of ' + height);
-			if (height > quickMessageMaxHeight) height = quickMessageMaxHeight;
-			console.log(newWin);
-			newWin.setSize(newWin.getSize()[0], height);
-			newWin.setPosition(workAreaSize.width, workAreaSize.height - height - calculateWinHeights(displayingMessages.indexOf(msgWinObj)));
-			newWin.show();
-			newWin.isDisplaying = true;
-			if (newWin.slideInAnim != 0 && !isLinux) {
-				newWin.slideInAnim = animate(
-					0,
-					message_win_width,
-					300,
-					(val) => newWin.setPosition(Math.round(workAreaSize.width - val), newWin.getPosition()[1]),
-					(x, dur) => {
-						return Math.pow((0.003 * (1000 / dur) * x) + 1, -3);
-					},
-					() => newWin.slideInAnim = 0
-				);
+			try {
+				console.log('Message window ready to display with height of ' + height);
+				if (height > quickMessageMaxHeight) height = quickMessageMaxHeight;
+				newWin.setSize(newWin.getSize()[0], height);
+				newWin.setPosition(workAreaSize.width, workAreaSize.height - height - calculateWinHeights(displayingMessages.indexOf(msgWinObj)));
+				newWin.show();
+				newWin.isDisplaying = true;
+				if (newWin.slideInAnim != 0 && !isLinux) {
+					newWin.slideInAnim = animate(
+						0,
+						message_win_width,
+						300,
+						(val) => newWin.setPosition(Math.round(workAreaSize.width - val), newWin.getPosition()[1]),
+						(x, dur) => {
+							return Math.pow((0.003 * (1000 / dur) * x) + 1, -3);
+						},
+						() => newWin.slideInAnim = 0
+					);
+				}
+			} catch (e) {
+				console.error(e);
+				console.log('Window object: ');
+				console.log(newWin);
+				console.log('Window webContents: ');
+				console.log(newWin.webContents);
 			}
 		});
 

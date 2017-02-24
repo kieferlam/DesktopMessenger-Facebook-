@@ -99,27 +99,10 @@ function appendUserMessage(messageId, replyMsg, timestampId){
     $('#content-div').height($('body')[0].scrollHeight);
 }
 
-$('#reply_button').click(()=>{
-    $('#message-main').append('<div id="reply-div"> <textarea id="reply_message" res></textarea> <button id="reply_send"></button> </div>');
-    $('#reply_button').hide();
-    const minHeight = 32;
-    const maxHeight = 96;
-    $('#reply_message').on('input', (event)=>{
-        while($('#reply_message').height() == $('#reply_message')[0].scrollHeight && $('#reply_message').height() > minHeight){
-            $('#reply_message').height($('#reply_message').height() - 1);
-        }
-        while($('#reply_message')[0].scrollHeight > $('#reply_message').height() && $('#reply_message').height() < maxHeight){
-            $('#reply_message').height($('#reply_message').height() + 1);
-        }
-        resize();
-    });
-    $('#reply_send').click(()=>{
-        var replyMsg = $('#reply_message').val();
+function sendMsg(replyMsg){
         var messageId = Math.floor(Math.random() * 100000);
         var timestampId = Math.floor(Math.random() * 100000);
         appendUserMessage(messageId, replyMsg, timestampId);
-        $('#reply_message').val('');
-        $('#reply_message').height(minHeight);
         if(!DEBUG_LOCAL_MODE){
             //Send via api
             ipc.send('apiSend', {body: replyMsg, thread: threadId});
@@ -132,8 +115,38 @@ $('#reply_button').click(()=>{
                 }
             });
         }
+}
+
+$('#reply_button').click(()=>{
+    $('#message-main').append('<div id="reply-div"> <textarea id="reply_message" res></textarea> <button id="reply_send"></button> </div>');
+    $('#reply_button').hide();
+    const minHeight = 32;
+    const maxHeight = 96;
+    var shiftDown = false;
+    function sendFunction(){
+        var replyMsg = $('#reply_message').val();
+        if(replyMsg.length <= 0) return;
+        sendMsg(replyMsg);
+        $('#reply_message').val('');
+        $('#reply_message').height(minHeight);
+        resize();
+    }
+    $('#reply_message').on('keyup keydown', (event)=> {
+        shiftDown = event.shiftKey;
+        if(event.keyCode == 13 && event.type == 'keydown'){
+            sendFunction();
+        }
+    });
+    $('#reply_message').on('input', (event)=>{
+        while($('#reply_message').height() == $('#reply_message')[0].scrollHeight && $('#reply_message').height() > minHeight){
+            $('#reply_message').height($('#reply_message').height() - 1);
+        }
+        while($('#reply_message')[0].scrollHeight > $('#reply_message').height() && $('#reply_message').height() < maxHeight){
+            $('#reply_message').height($('#reply_message').height() + 1);
+        }
         resize();
     });
+    $('#reply_send').click(sendFunction);
     resize();
 });
 
