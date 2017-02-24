@@ -28,7 +28,7 @@ ipc.on('loginError', (event, data) => {
     $('#info-container').html('<p class="info-error">' + data.error + '</p>');
 });
 
-$('#login-button').click(() => {
+function loginFunction(){
     if (areLoginDetailsValid()) {
         mainLog('Login details valid.');
 
@@ -47,7 +47,21 @@ $('#login-button').click(() => {
 
         ipc.send('loginWithDetails', { email: $('#email-field').val(), password: $('#password-field').val(), auth: auth });
     }
+}
+
+$('#password-field').on('keydown', (event)=>{
+    if(event.keyCode == 13){
+        loginFunction();
+    }
 });
+
+$('#auth-field').on('keydown', (event)=>{
+    if(event.keyCode == 13){
+        loginFunction();
+    }
+});
+
+$('#login-button').click(loginFunction);
 
 ipc.on('loginSuccess', ()=>{
     $('#info-container').html('<div class="successTick"> <div class="tickBase"></div> <div class="tickFlick"></div> </div>');
