@@ -16,6 +16,9 @@ var threadId;
 
 var completeData;
 
+var lastSenderID = 0;
+var lastMessageTime = '0';
+
 $(document).ready(() => {
     ipc.send('messageDomReady');
     $('#content-div').addClass('translucent');
@@ -57,7 +60,14 @@ ipc.on('anotherMessage', (event, userInfo) => {
 });
 
 function appendMessage(message) {
-    $('#messages_container').append('<div class="message-container">' + sender_img_html(message) + timestamp_html(new Date(Date.now())) + message_html(message) + '</div>');
+    var timestamp = timestamp_html(new Date(Date.now()));
+    if(lastSenderID != message.senderID || lastMessageTime != timestamp){
+        $('#messages_container').append('<div class="message-container">' + sender_img_html(message) + timestamp + message_html(message) + '</div>');
+        lastSenderID = message.senderID;
+        lastMessageTime = timestamp;
+    }else{
+        $('#messages_container').append('<div class="message-container">' + message_html(message) + '</div>');
+    }
     $('#content-div').height($('body')[0].scrollHeight);
 }
 
@@ -94,7 +104,15 @@ function userMessagePara(messageId, replyMsg){
 }
 
 function appendUserMessage(messageId, replyMsg, timestampId){
-    var msgHtml = '<div class="user-message-container">' + userTimestamp(new Date(Date.now()), timestampId) + userMessagePara(messageId, replyMsg) + '</div>';
+    var nowDate = new Date(Date.now());
+    var timestamp = nowDate.getHours() + ':' + nowDate.getMinutes();
+    if(lastSenderID != 'user' || lastMessageTime != timestamp){
+        var msgHtml = '<div class="user-message-container">' + userTimestamp(nowDate, timestampId) + userMessagePara(messageId, replyMsg) + '</div>';
+        lastSenderID = 'user';
+        lastMessageTime = timestamp;
+    }else{
+        var msgHtml = '<div class="user-message-container">' + userMessagePara(messageId, replyMsg) + '</div>';
+    }
     $('#messages_container').append(msgHtml);  
     $('#content-div').height($('body')[0].scrollHeight);
 }
