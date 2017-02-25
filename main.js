@@ -31,18 +31,65 @@ const preloadThreadAmount = 10;
 var workAreaSize = {};
 var quickMessageMaxHeight;
 
+var profileWindow = null;
+
 let tray = null;
 function makeTrayIcon(api) {
 	tray = new Tray('./img/ico24.png');
 	const contextMenu = Menu.buildFromTemplate([
-		{ label: 'Logout', type: 'normal' },
+		{ label: 'Friends', type: 'normal', click: () => showProfileWindow('Friends') },
+		{ label: 'Messages', type: 'normal', click: () => showProfileWindow('Messages') },
 		{ type: 'separator' },
-		{ label: 'Quit', type: 'normal' }
+		{ label: 'Logout', type: 'normal', click: () => { if (!DEBUG_LOCAL_MODE) api.logout(() => app.quit()); } },
+		{ label: 'Quit', type: 'normal', click: () => app.quit() }
 	])
-	if (!DEBUG_LOCAL_MODE) contextMenu.items[0].click = () => api.logout(() => app.quit());
-	contextMenu.items[2].click = () => app.quit();
 	tray.setToolTip('Kiefer Messenger')
 	tray.setContextMenu(contextMenu)
+}
+
+function showProfileWindow(defaultTab) {
+	console.log('Show profile window request. Tab: ' + defaultTab);
+	if (profileWindow != null) return console.log('Profile window is not null.');
+
+	profileWindow = new BrowserWindow({
+		width: 360,
+		height: 720,
+		frame: true,
+		transparent: false,
+		show: false,
+		icon: './img/ico24.png',
+		alwaysOnTop: false,
+		skipTaskbar: false,
+		autoHideMenuBar: true
+	});
+
+	profileWindow.loadURL(url.format({
+		pathname: path.join(__dirname, 'profile.html'),
+		protocol: 'file',
+		slashes: true
+	}));
+
+	profileWindow.on('closed', () => {
+		profileWindow = null;
+		console.log('Profile window closed.');
+	}
+	);
+
+	ipc.once('profileDomLoaded', (event) => {
+		console.log('Profile window DOM loaded.');
+		try {
+			//Load facebook data
+			event.sender.send('loadFacebookData');
+		} catch (e) {
+			console.error(e);
+			profileWindow = null;
+		}
+	});
+
+	ipc.once('facebookDataLoaded', (event) => {
+		console.log('Profile Facebook data loaded.');
+		profileWindow.show();
+	});
 }
 
 app.on('ready', () => {
