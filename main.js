@@ -2,7 +2,7 @@
 
 const electron = require('electron');
 //globalShortcut for global keyboard events for testing
-const {app, BrowserWindow, Tray, Menu, Dialog, globalShortcut} = electron;
+const { app, BrowserWindow, Tray, Menu, Dialog, globalShortcut } = electron;
 const url = require('url');
 const path = require('path');
 const fs = require('fs');
@@ -27,6 +27,12 @@ var displayingMessages = [];
 
 var preloadedThreads = [];
 const preloadThreadAmount = 10;
+var preloadedThreadsIndex = 0;
+
+var currentUserID;
+var currentUserInfo;
+
+var preloadedUserInfo = {};
 
 var workAreaSize = {};
 var quickMessageMaxHeight;
@@ -35,19 +41,20 @@ var profileWindow = null;
 
 let tray = null;
 function makeTrayIcon(api) {
-	tray = new Tray('./img/ico24.png');
+	tray = new Tray(path.join(__dirname, '/img/ico24.png'));
 	const contextMenu = Menu.buildFromTemplate([
-		{ label: 'Friends', type: 'normal', click: () => showProfileWindow('Friends') },
-		{ label: 'Messages', type: 'normal', click: () => showProfileWindow('Messages') },
+		{ label: 'Friends', type: 'normal', click: () => showProfileWindow(api, 'Friends') },
+		{ label: 'Messages', type: 'normal', click: () => showProfileWindow(api, 'Messages') },
 		{ type: 'separator' },
 		{ label: 'Logout', type: 'normal', click: () => { if (!DEBUG_LOCAL_MODE) api.logout(() => app.quit()); } },
 		{ label: 'Quit', type: 'normal', click: () => app.quit() }
 	])
 	tray.setToolTip('Kiefer Messenger')
 	tray.setContextMenu(contextMenu)
+
 }
 
-function showProfileWindow(defaultTab) {
+function showProfileWindow(api, defaultTab) {
 	console.log('Show profile window request. Tab: ' + defaultTab);
 	if (profileWindow != null) return console.log('Profile window is not null.');
 
@@ -79,7 +86,20 @@ function showProfileWindow(defaultTab) {
 		console.log('Profile window DOM loaded.');
 		try {
 			//Load facebook data
-			event.sender.send('loadFacebookData');
+			var facebookData = {};
+			facebookData.messageThreads = preloadedThreads.slice();
+
+			api.getFriendsList((err, data) => {
+				if (err) return console.error(err);
+				facebookData.friendsList = data;
+
+				facebookData.participantInfo = preloadedUserInfo;
+
+				//Send facebook data to profile process
+				event.sender.send('loadFacebookData', facebookData);
+
+			});
+
 		} catch (e) {
 			console.error(e);
 			profileWindow = null;
@@ -90,7 +110,23 @@ function showProfileWindow(defaultTab) {
 		console.log('Profile Facebook data loaded.');
 		profileWindow.show();
 	});
+
+	ipc.on('preloadMoreThreads', (event) => {
+		console.log('Load more threads request.');
+		loadNextThreads(api, (threads) => {
+			var threadSendPackage = { messageThreads: threads };
+			loadRelevantUserInfo(api, threads, (userData)=>{
+				threadSendPackage.participantInfo = preloadedUserInfo;
+				event.sender.send('loadMoreThreads', threadSendPackage);
+				console.log('Loaded more threads.');
+			})
+		});
+	});
 }
+
+ipc.on('openThread', (event, data) => {
+	console.log('Open thread request. Thread ID: ' + data);
+});
 
 app.on('ready', () => {
 	if (DEBUG_LOCAL_MODE) {
@@ -222,26 +258,72 @@ function userLogin() {
 	});
 }
 
+function loadRelevantUserInfo(api, threads, callback) {
+	var userIDs = [];
+
+	//This is to just concat all participant IDs regardless of whether the user has been loaded or not
+	var bigUserIDs = [];
+	threads.forEach((elem, index) => {
+		bigUserIDs = bigUserIDs.concat(elem.participantIDs);
+	});
+
+	for (var i = 0; i < bigUserIDs.length; ++i) {
+		if (preloadedUserInfo[bigUserIDs[i]] == undefined && userIDs.indexOf(bigUserIDs[i]) == -1) {
+			userIDs.push(bigUserIDs[i]);
+		}
+	}
+	
+	api.getUserInfo(userIDs, (err, userData) => {
+		if (err) return console.error(err);
+		preloadedUserInfo = collect(preloadedUserInfo, userData);
+		if(callback != undefined && callback != null){
+			callback(userData);
+		}
+	});
+
+}
+
+function loadNextThreads(api, callback) {
+	api.getThreadList(preloadedThreadsIndex, preloadedThreadsIndex + preloadThreadAmount, (err, arr) => {
+		try {
+			arr.forEach((elem) => preloadedThreads.push(elem));
+			if (callback != undefined && callback != null) callback(arr);
+		} catch (e) {
+			console.error(e);
+		} finally {
+			preloadedThreadsIndex += preloadThreadAmount;
+		}
+	});
+}
+
 function loginSuccess(api) {
-	const {width, height} = electron.screen.getPrimaryDisplay().workAreaSize;
+	const { width, height } = electron.screen.getPrimaryDisplay().workAreaSize;
 	workAreaSize = { width: width, height: height };
 	quickMessageMaxHeight = Math.floor(workAreaSize.height * (1.0 / 3.0));
 	loggedIn = true;
+	currentUserID = api.getCurrentUserID();
 	makeTrayIcon(api);
 
-	//Preload thread data
-	if (!DEBUG_LOCAL_MODE) api.getThreadList(0, preloadThreadAmount - 1, (err, arr) => {
-		if (err) return console.error(err);
-		arr.forEach((elem, index) => {
-			preloadedThreads.push(elem);
-		});
-		console.log('Preloaded ' + preloadedThreads.length + ' threads.');
-	});
+	if (!DEBUG_LOCAL_MODE) {
 
-	if (!DEBUG_LOCAL_MODE) api.listen((err, message) => {
-		if (err) return console.error(err);
-		handleMessage(api, message);
-	});
+		//Preload thread data
+		console.log('Loading ' + preloadThreadAmount + ' threads.');
+		loadNextThreads(api, (arr) => {
+			console.log('Loaded ' + preloadedThreads.length + ' threads.');
+
+			console.log('Loading user info.');
+			loadRelevantUserInfo(api, arr, (userData) => {
+				currentUserInfo = userData[currentUserID];
+				preloadedUserInfo = collect(preloadedUserInfo, userData);
+				console.log('Loaded user info.');
+			});
+
+			api.listen((err, message) => {
+				if (err) return console.error(err);
+				handleMessage(api, message);
+			});
+		});
+	}
 }
 
 function calculateWinHeights(curr = 999) {
@@ -478,5 +560,18 @@ ipc.on('apiSend', (event, msg) => {
 		});
 	});
 });
+
+function collect() {
+	var ret = {};
+	var len = arguments.length;
+	for (var i = 0; i < len; i++) {
+		for (var p in arguments[i]) {
+			if (arguments[i].hasOwnProperty(p)) {
+				ret[p] = arguments[i][p];
+			}
+		}
+	}
+	return ret;
+}
 
 app.on('window-all-closed', () => { });
