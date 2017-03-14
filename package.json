@@ -1,11 +1,11 @@
 {
   "name": "kiefermessenger",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Desktop app integrated with Facebook Messenger",
   "main": "main.js",
   "scripts": {
     "start": "electron ."
   },
   "author": "Kiefer Lam",
-  "license": "ISC"
+  "license": ""
 }

@@ -38,4 +38,3 @@ KieferMessenger could only be made possible with:
 
    * [Facebook-Chat-Api by Schmavery](https://github.com/Schmavery/facebook-chat-api)
    * [Electron](http://electron.atom.io/)
-   * [Nodejs](https://nodejs.org/en/)
