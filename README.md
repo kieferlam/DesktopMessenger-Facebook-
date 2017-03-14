@@ -30,7 +30,7 @@ If you want to use this application without using the ZIP file, follow:
 
    1. Download Electron from http://electron.atom.io/
    2. Download the version of KieferMessenger you want from /release/app/
-   3. Place downloaded app in the (Root of Electron)/resources/.
+   3. Place downloaded app in the {Root of Electron}/resources/.
    4. To run, double click or run electron.exe.
 
 ## Credits
