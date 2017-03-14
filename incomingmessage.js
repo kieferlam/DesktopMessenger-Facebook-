@@ -66,10 +66,12 @@ ipc.on('anotherMessage', (event, userInfo) => {
 });
 
 function appendMessage(message) {
-    if(lastSenderID != message.senderID || lastMessageTime != timestamp){
+    var date = new Date(Date.now());
+    var acc_to_min = ('0' + date.getHours()).slice(-2) + ':' + ('0' + date.getMinutes()).slice(-2);
+    if(lastSenderID != message.senderID || lastMessageTime != acc_to_min){
         lastSenderID = message.senderID;
-        var timestamp = timestamp_html(new Date(Date.now()));
-        lastMessageTime = timestamp;
+        var timestamp = timestamp_html(date);
+        lastMessageTime = acc_to_min;
         $('#messages_container').append('<div class="message-container">' + sender_img_html(message) + timestamp + message_html(message) + '</div>');
     }else{
         $('#messages_container').append('<div class="message-container">' + message_html(message) + '</div>');
