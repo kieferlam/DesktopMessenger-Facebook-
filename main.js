@@ -20,6 +20,10 @@ global.DEBUG_LOCAL_MODE = DEBUG_LOCAL_MODE;
 
 var ipc = electron.ipcMain;
 
+var settings = {
+	message_display_period: 5000
+};
+
 var login = require('facebook-chat-api');
 var loggedIn = false;
 
@@ -260,7 +264,7 @@ function userLogin() {
 
 function loadRelevantUserInfo(api, threads, callback) {
 	var userIDs = [];
-
+	
 	//This is to just concat all participant IDs regardless of whether the user has been loaded or not
 	var bigUserIDs = [];
 	threads.forEach((elem, index) => {
@@ -271,6 +275,10 @@ function loadRelevantUserInfo(api, threads, callback) {
 		if (preloadedUserInfo[bigUserIDs[i]] == undefined && userIDs.indexOf(bigUserIDs[i]) == -1) {
 			userIDs.push(bigUserIDs[i]);
 		}
+	}
+
+	if(userIDs.length == 0){
+		callback({});
 	}
 	
 	api.getUserInfo(userIDs, (err, userData) => {
@@ -381,6 +389,7 @@ function handleMessage(api, message) {
 		}));
 
 		const animateCloseFunction = function () {
+			if(autoCloseRunning) return;
 			autoCloseRunning = true;
 			const closeAnim = animate(
 				0,
@@ -393,8 +402,6 @@ function handleMessage(api, message) {
 				() => newWin.close()
 			);
 		}
-
-		newWin.autoCloseTimeout = setTimeout(animateCloseFunction, 5000);
 
 		newWin.restartCloseTimer = function () {
 			clearTimeout(newWin.autoCloseTimeout);
@@ -420,7 +427,9 @@ function handleMessage(api, message) {
 				var userInfo = { userID: message.senderID, message: message, data: ret[message.senderID] };
 				api.getThreadInfo(message.threadID, (err, threadData) => {
 					if (err) return console.error(err);
-					event.sender.send('initMessageDetails', threadData, userInfo);
+					loadRelevantUserInfo(api, [threadData], (newUserInfo)=>{
+						event.sender.send('initMessageDetails', threadData, userInfo, preloadedUserInfo);
+					});
 				});
 			});
 			else
@@ -444,7 +453,10 @@ function handleMessage(api, message) {
 						(x, dur) => {
 							return Math.pow((0.003 * (1000 / dur) * x) + 1, -3);
 						},
-						() => newWin.slideInAnim = 0
+						() => {
+							newWin.slideInAnim = 0;
+							newWin.restartCloseTimer();
+						}
 					);
 				}
 			} catch (e) {
@@ -453,6 +465,7 @@ function handleMessage(api, message) {
 		});
 
 		newWin.once('close', () => {
+			autoCloseRunning = false;
 			console.log('Message window (' + displayingMessages.indexOf(msgWinObj) + ') closed.');
 			displayingMessages.splice(displayingMessages.indexOf(msgWinObj), 1);
 		});

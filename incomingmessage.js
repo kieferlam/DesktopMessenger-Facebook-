@@ -15,9 +15,14 @@ var oldScrollHeight = 0;
 var threadId;
 
 var completeData;
+var userInfo;
 
 var lastSenderID = 0;
 var lastMessageTime = '0';
+
+window.onerror = function(error, url, line){
+    mainLog("Error at line " + line + ": " + error);
+};
 
 $(document).ready(() => {
     ipc.send('messageDomReady');
@@ -30,25 +35,26 @@ $(document).click(() => {
     $('#content-div').removeClass('translucent');
 });
 
-ipc.once('initMessageDetails', (event, threadinfo, userInfo) => {
+ipc.once('initMessageDetails', (event, threadinfo, messageInfo, preloadedUserInfo) => {
     mainLog('Initial message update.');
-    threadId = userInfo.message.threadID;
-    completeData = {threadInfo: threadinfo, userInfo: userInfo, message: userInfo.message};
+    threadId = messageInfo.message.threadID;
+    userInfo = preloadedUserInfo;
+    completeData = {threadInfo: threadinfo, userInfo: messageInfo, message: messageInfo.message};
     if(!DEBUG_LOCAL_MODE) {
-        event.sender.send('pollPreloadedThreads', userInfo.message.threadID);
+        event.sender.send('pollPreloadedThreads', messageInfo.message.threadID);
         ipc.once('preloadedThreadInfo', (event, threadData)=>{
             if(threadData == null){
                 threadData = {imageSrc: null};
             }
-            $('#thread_pic').attr('src', threadData.imageSrc == null ? userInfo.data.thumbSrc : threadData.imageSrc);
+            $('#thread_pic').attr('src', threadData.imageSrc == null ? messageInfo.data.thumbSrc : threadData.imageSrc);
             $('#thread_name').text(threadinfo.name);
-            var sender_name = userInfo.data.name + ((userInfo.data.alternateName != undefined) ? ' (' + userInfo.data.alternateName + ')' : '');
-            $('#sender_name').text(userInfo.data.isGroup ? sender_name:'');
-            appendMessage(userInfo.message);
+            var sender_name = messageInfo.data.name + ((messageInfo.data.alternateName != undefined) ? ' (' + messageInfo.data.alternateName + ')' : '');
+            $('#sender_name').text(messageInfo.data.isGroup ? sender_name:'');
+            appendMessage(messageInfo.message);
             event.sender.send('readyToDisplay', $('body')[0].scrollHeight);
         });
     } else {
-        appendMessage(userInfo.message);
+        appendMessage(messageInfo.message);
         event.sender.send('readyToDisplay', $('body')[0].scrollHeight);
     } 
 });
@@ -60,11 +66,11 @@ ipc.on('anotherMessage', (event, userInfo) => {
 });
 
 function appendMessage(message) {
-    var timestamp = timestamp_html(new Date(Date.now()));
     if(lastSenderID != message.senderID || lastMessageTime != timestamp){
-        $('#messages_container').append('<div class="message-container">' + sender_img_html(message) + timestamp + message_html(message) + '</div>');
         lastSenderID = message.senderID;
+        var timestamp = timestamp_html(new Date(Date.now()));
         lastMessageTime = timestamp;
+        $('#messages_container').append('<div class="message-container">' + sender_img_html(message) + timestamp + message_html(message) + '</div>');
     }else{
         $('#messages_container').append('<div class="message-container">' + message_html(message) + '</div>');
     }
@@ -81,10 +87,10 @@ function message_html(message){
 
 function sender_name(){
     if(completeData.message.isGroup){
-        var nick = completeData.threadInfo.nicknames[completeData.message.senderID.toString()];
-        if(nick != null) return nick + ' (' + completeData.userInfo.data.name + ') ';
+        var nick = completeData.threadInfo.nicknames[lastSenderID.toString()];
+        if(nick != null) return nick + ' (' + userInfo[lastSenderID].name + ') ';
     }
-    return completeData.userInfo.data.name;
+    return userInfo[lastSenderID].name;
 }
 
 function timestamp_html(date){
