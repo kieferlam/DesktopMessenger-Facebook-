@@ -8,6 +8,8 @@ const $ = require('jquery');
 
 var threadsRequested = false;
 
+
+
 $(document).ready(() => {
     ipc.send('profileDomLoaded');
 });
@@ -56,7 +58,6 @@ ipc.once('loadFacebookData', (event, threadData) => {
 
     ipc.on('loadMoreThreads', (loadThreadsEvent, moreThreadData) => {
         mainLog('Profile window: Received more threads.');
-        mainLog(moreThreadData);
         appendThreadData(moreThreadData);
         threadsRequested = false;
     });
@@ -64,7 +65,13 @@ ipc.once('loadFacebookData', (event, threadData) => {
     event.sender.send('facebookDataLoaded');
 });
 
+$('#friends-tab-button').click((event)=>{
 
+});
+
+$('#friends-tab-button').click((event)=>{
+
+});
 
 function mainLog(log) {
     ipc.send('console.log', log);

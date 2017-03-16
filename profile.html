@@ -15,13 +15,14 @@
 
     <div id="content-div">
         <div id="header-div">
-            <img src="./img/default_pic.jpg" alt="Your Profile Picture" />
-            <h1>Profile</h1>
-            <h2 id="name-h2">Your Name</h2>
-            
             <div id="tab-button-div">
-                <button>Friends</button>
-                <button>Messages</button>
+                <button id="friends-tab-button">Friends</button>
+                <button id="messages-tab-button">Messages</button>
+            </div>
+            <div id="selected-indicator-div">
+                <svg height="8" width="8">
+                    <polygon points="0,0 4,8 8,0" style="fill:rgb(59,89,152);" />
+                </svg>
             </div>
         </div>
         <div id="tab-content-div">

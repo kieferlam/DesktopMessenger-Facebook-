@@ -64,7 +64,7 @@ function showProfileWindow(api, defaultTab) {
 
 	profileWindow = new BrowserWindow({
 		width: 360,
-		height: 720,
+		height: 600,
 		frame: true,
 		transparent: false,
 		show: false,
