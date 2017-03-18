@@ -43,6 +43,8 @@ var quickMessageMaxHeight;
 
 var profileWindow = null;
 
+var forceQuit = false;
+
 let tray = null;
 function makeTrayIcon(api) {
 	tray = new Tray(path.join(__dirname, '/img/ico24.png'));
@@ -50,8 +52,14 @@ function makeTrayIcon(api) {
 		{ label: 'Friends', type: 'normal', click: () => showProfileWindow(api, 'Friends') },
 		{ label: 'Messages', type: 'normal', click: () => showProfileWindow(api, 'Messages') },
 		{ type: 'separator' },
+		{label: 'Settings', type: 'normal', click: ()=> showSettingsWindow()},
+		{ type: 'separator' },
 		{ label: 'Logout', type: 'normal', click: () => { if (!DEBUG_LOCAL_MODE) api.logout(() => app.quit()); } },
-		{ label: 'Quit', type: 'normal', click: () => app.quit() }
+		{ label: 'Quit', type: 'normal', click: () => {
+			//Quit pressed
+			forceQuit = true;
+			app.quit();
+		} }
 	])
 	tray.setToolTip('Kiefer Messenger')
 	tray.setContextMenu(contextMenu)
@@ -60,7 +68,11 @@ function makeTrayIcon(api) {
 
 function showProfileWindow(api, defaultTab) {
 	console.log('Show profile window request. Tab: ' + defaultTab);
-	if (profileWindow != null) return console.log('Profile window is not null.');
+	if (profileWindow != null) {
+		profileWindow.webContents.send('requestDisplayTab', defaultTab);
+		profileWindow.show();
+		return console.log('Profile window is not null.');
+	}
 
 	profileWindow = new BrowserWindow({
 		width: 360,
@@ -80,9 +92,12 @@ function showProfileWindow(api, defaultTab) {
 		slashes: true
 	}));
 
-	profileWindow.on('closed', () => {
-		profileWindow = null;
-		console.log('Profile window closed.');
+	profileWindow.on('close', (event) => {
+		if(!forceQuit){
+			event.preventDefault();
+			profileWindow.hide();
+			console.log('Profile window hidden.');
+		}
 	}
 	);
 

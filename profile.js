@@ -58,6 +58,10 @@ function setDisplayTab(tab) {
     }
 }
 
+ipc.on('requestDisplayTab', (event, tab) => {
+    setDisplayTab(tab);
+});
+
 ipc.once('loadFacebookData', (event, threadData, tab) => {
     mainLog('Facebook data sent to profile window.');
     appendThreadData(threadData);
