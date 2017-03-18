@@ -55,24 +55,46 @@ body{
 #tab-button-div{
     display: block;
     height: 32px;
+    background: whitesmoke;
+    box-shadow: 0px 1px 10px lightgrey;
+}
+
+#selected-tab-indicator{
+    display:block;
+    position:absolute;
+    top:32px;
+    left:calc(15% - 10px);
+    width:0;
+    height:0;
+    border-color: rgb(206,215,230) transparent transparent transparent; /*border color should be same as div div background color*/
+    border-style: solid;
+    border-width: 10px;
+    transition: 250ms ease-out;
+    background: transparent;
 }
 
 #tab-button-div button{
+    float: left;
     min-width: 64px;
     width: 30%;
     max-width: 128px;
     height: 32px;
     font-size: 14pt;
+    margin: 0;
     overflow: hidden;
-    background: none;
     color: rgb(59,89,152);
     border: none;
+    outline: none;
+    background: transparent;
 }
 
-#selected-indicator-div{
-    position: absolute;
-    left: 15%;
-    top: 14pt;
+.selected-button{
+    background: rgb(206,215,230) !important;
+}
+
+#tab-button-div button:hover{
+    background: rgb(206,215,230);
+    border: none;
 }
 
 #tab-content-div{

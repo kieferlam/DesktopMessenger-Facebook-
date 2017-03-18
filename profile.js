@@ -8,7 +8,7 @@ const $ = require('jquery');
 
 var threadsRequested = false;
 
-
+var selectedTab;
 
 $(document).ready(() => {
     ipc.send('profileDomLoaded');
@@ -37,9 +37,32 @@ function appendThreadData(data) {
     });
 }
 
-ipc.once('loadFacebookData', (event, threadData) => {
+function setDisplayTab(tab) {
+    selectedTab = tab;
+    switch (tab) {
+        case 'Friends':
+            $('#messages-tab-div').css({ display: 'none' });
+            $('#friends-tab-div').css({ display: 'initial' });
+            $('#friends-tab-button').addClass('selected-button');
+            $('#messages-tab-button').removeClass('selected-button');
+            $('#selected-tab-indicator').css({ left: "calc(15% - 10px)" });
+            break;
+        default:
+        case 'Messages':
+            $('#friends-tab-div').css({ display: 'none' });
+            $('#messages-tab-div').css({ display: 'initial' });
+            $('#messages-tab-button').addClass('selected-button');
+            $('#friends-tab-button').removeClass('selected-button');
+            $('#selected-tab-indicator').css({ left: "calc(45% - 10px)" });
+            break;
+    }
+}
+
+ipc.once('loadFacebookData', (event, threadData, tab) => {
     mainLog('Facebook data sent to profile window.');
     appendThreadData(threadData);
+
+    setDisplayTab(tab);
 
     $('.messages-list-item').dblclick((clickEvent) => {
         var threadID = $(clickEvent.delegateTarget).attr('threadID');
@@ -48,7 +71,7 @@ ipc.once('loadFacebookData', (event, threadData) => {
 
     $('#tab-content-div').scroll((scrollEvent) => {
         if (!threadsRequested) {
-            if ($('#tab-content-div').scrollTop() + $('#tab-content-div').innerHeight() >= $('#tab-content-div')[0].scrollHeight) {
+            if ($('#tab-content-div').scrollTop() + $('#tab-content-div').innerHeight() >= $('#tab-content-div')[0].scrollHeight && selectedTab == 'Messages') {
                 mainLog('Profile window: Scroll reached bottom, requesting more threads.');
                 threadsRequested = true;
                 event.sender.send('preloadMoreThreads');
@@ -65,12 +88,14 @@ ipc.once('loadFacebookData', (event, threadData) => {
     event.sender.send('facebookDataLoaded');
 });
 
-$('#friends-tab-button').click((event)=>{
 
+
+$('#friends-tab-button').click((event) => {
+    setDisplayTab('Friends');
 });
 
-$('#friends-tab-button').click((event)=>{
-
+$('#messages-tab-button').click((event) => {
+    setDisplayTab('Messages');
 });
 
 function mainLog(log) {

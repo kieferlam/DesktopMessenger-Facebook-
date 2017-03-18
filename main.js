@@ -100,7 +100,7 @@ function showProfileWindow(api, defaultTab) {
 				facebookData.participantInfo = preloadedUserInfo;
 
 				//Send facebook data to profile process
-				event.sender.send('loadFacebookData', facebookData);
+				event.sender.send('loadFacebookData', facebookData, defaultTab);
 
 			});
 
