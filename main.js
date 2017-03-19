@@ -53,28 +53,32 @@ function makeTrayIcon(api) {
 		{ label: 'Friends', type: 'normal', click: () => showProfileWindow(api, 'Friends') },
 		{ label: 'Messages', type: 'normal', click: () => showProfileWindow(api, 'Messages') },
 		{ type: 'separator' },
-		{label: 'Settings', type: 'normal', click: ()=> showSettingsWindow()},
+		{ label: 'Settings', type: 'normal', click: () => showSettingsWindow() },
 		{ type: 'separator' },
-		{ label: 'Logout', type: 'normal', click: () => { 
-			forceQuit = true;
-			saveSettings();
-			if (!DEBUG_LOCAL_MODE) api.logout(() => app.quit()); 
-		} },
-		{ label: 'Quit', type: 'normal', click: () => {
-			//Quit pressed
-			forceQuit = true;
-			saveSettings();
-			app.quit();
-		} }
+		{
+			label: 'Logout', type: 'normal', click: () => {
+				forceQuit = true;
+				saveSettings();
+				if (!DEBUG_LOCAL_MODE) api.logout(() => app.quit());
+			}
+		},
+		{
+			label: 'Quit', type: 'normal', click: () => {
+				//Quit pressed
+				forceQuit = true;
+				saveSettings();
+				app.quit();
+			}
+		}
 	])
 	tray.setToolTip('Kiefer Messenger')
 	tray.setContextMenu(contextMenu)
 
 }
 
-function showSettingsWindow(){
+function showSettingsWindow() {
 	console.log('Show settings window request.');
-	if(settingsWindow != null){
+	if (settingsWindow != null) {
 		//Show window to move it to the front.
 		settingsWindow.show();
 		return console.log('Settings window is not null.');
@@ -101,23 +105,27 @@ function showSettingsWindow(){
 	/**
 	 * I decided not to keep the settings window alive and hidden when `closed` (like the profile window) because the settings window is not opened/closed enough for the quickness. Instead, the window will be destroyed and save about 20MB RAM.
 	 */
-	settingsWindow.on('closed', (event)=>{
+	settingsWindow.on('closed', (event) => {
 		console.log('Settings window closed.');
 		saveSettings();
 		settingsWindow = null;
 	});
 }
 
-function loadSettings(){
+function loadSettings() {
 	console.log('Loading settings...');
-	var loadedSettings = JSON.parse(fs.readFileSync('./prefs.json'));
-	for(var prop in loadedSettings){
-		global.settings[prop] = loadedSettings[prop];
+	if (fs.existsSync('./prefs.json')) {
+		var loadedSettings = JSON.parse(fs.readFileSync('./prefs.json'));
+		for (var prop in loadedSettings) {
+			global.settings[prop] = loadedSettings[prop];
+		}
+		console.log('Loaded settings.');
+	} else {
+		console.log('Settings file doesn\'t exist.');
 	}
-	console.log('Loaded settings.');
 }
 
-function saveSettings(){
+function saveSettings() {
 	console.log('Saving settings...');
 	fs.writeFileSync('./prefs.json', JSON.stringify(global.settings));
 	console.log('Saved settings.');
@@ -150,7 +158,7 @@ function showProfileWindow(api, defaultTab) {
 	}));
 
 	profileWindow.on('close', (event) => {
-		if(!forceQuit){
+		if (!forceQuit) {
 			event.preventDefault();
 			profileWindow.hide();
 			return console.log('Profile window hidden.');
@@ -192,7 +200,7 @@ function showProfileWindow(api, defaultTab) {
 		console.log('Load more threads request.');
 		loadNextThreads(api, (threads) => {
 			var threadSendPackage = { messageThreads: threads };
-			loadRelevantUserInfo(api, threads, (userData)=>{
+			loadRelevantUserInfo(api, threads, (userData) => {
 				threadSendPackage.participantInfo = preloadedUserInfo;
 				event.sender.send('loadMoreThreads', threadSendPackage);
 				console.log('Loaded more threads.');
@@ -338,7 +346,7 @@ function userLogin() {
 
 function loadRelevantUserInfo(api, threads, callback) {
 	var userIDs = [];
-	
+
 	//This is to just concat all participant IDs regardless of whether the user has been loaded or not
 	var bigUserIDs = [];
 	threads.forEach((elem, index) => {
@@ -351,14 +359,14 @@ function loadRelevantUserInfo(api, threads, callback) {
 		}
 	}
 
-	if(userIDs.length == 0){
+	if (userIDs.length == 0) {
 		callback({});
 	}
-	
+
 	api.getUserInfo(userIDs, (err, userData) => {
 		if (err) return console.error(err);
 		preloadedUserInfo = collect(preloadedUserInfo, userData);
-		if(callback != undefined && callback != null){
+		if (callback != undefined && callback != null) {
 			callback(userData);
 		}
 	});
@@ -463,7 +471,7 @@ function handleMessage(api, message) {
 		}));
 
 		const animateCloseFunction = function () {
-			if(autoCloseRunning) return;
+			if (autoCloseRunning) return;
 			autoCloseRunning = true;
 			const closeAnim = animate(
 				0,
@@ -479,7 +487,7 @@ function handleMessage(api, message) {
 
 		newWin.restartCloseTimer = function () {
 			clearTimeout(newWin.autoCloseTimeout);
-			if(global.settings.message_display_period > 0){
+			if (global.settings.message_display_period > 0) {
 				newWin.autoCloseTimeout = setTimeout(animateCloseFunction, global.settings.message_display_period);
 			}
 		}
@@ -503,7 +511,7 @@ function handleMessage(api, message) {
 				var userInfo = { userID: message.senderID, message: message, data: ret[message.senderID] };
 				api.getThreadInfo(message.threadID, (err, threadData) => {
 					if (err) return console.error(err);
-					loadRelevantUserInfo(api, [threadData], (newUserInfo)=>{
+					loadRelevantUserInfo(api, [threadData], (newUserInfo) => {
 						event.sender.send('initMessageDetails', threadData, userInfo, preloadedUserInfo);
 					});
 				});
