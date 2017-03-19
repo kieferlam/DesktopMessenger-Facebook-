@@ -24,6 +24,9 @@ global.settings = {
 	message_display_period: 5000
 };
 
+const appstateFile = './appstate.json';
+const settingsFile = './prefs.json';
+
 var login = require('facebook-chat-api');
 var loggedIn = false;
 
@@ -114,8 +117,8 @@ function showSettingsWindow() {
 
 function loadSettings() {
 	console.log('Loading settings...');
-	if (fs.existsSync('./prefs.json')) {
-		var loadedSettings = JSON.parse(fs.readFileSync('./prefs.json'));
+	if (fs.existsSync(settingsFile)) {
+		var loadedSettings = JSON.parse(fs.readFileSync(settingsFile));
 		for (var prop in loadedSettings) {
 			global.settings[prop] = loadedSettings[prop];
 		}
@@ -127,7 +130,7 @@ function loadSettings() {
 
 function saveSettings() {
 	console.log('Saving settings...');
-	fs.writeFileSync('./prefs.json', JSON.stringify(global.settings));
+	fs.writeFileSync(settingsFile, JSON.stringify(global.settings));
 	console.log('Saved settings.');
 }
 
@@ -263,7 +266,7 @@ function runLogin(useAppState) {
 	else {
 		if (useAppState) {
 			try {
-				login({ appState: JSON.parse(fs.readFileSync('appstate.json', 'utf8')) }, (err, api) => {
+				login({ appState: JSON.parse(fs.readFileSync(appstateFile, 'utf8')) }, (err, api) => {
 					if (err) {
 						console.log('Appstate login error.');
 						console.error(err);
@@ -331,7 +334,7 @@ function userLogin() {
 			settings.lastLoginEmail = data.email;
 			console.log('Login success!');
 
-			fs.writeFileSync('appstate.json', JSON.stringify(api.getAppState()));
+			fs.writeFileSync(appstateFile, JSON.stringify(api.getAppState()));
 
 			event.sender.send('loginSuccess');
 
