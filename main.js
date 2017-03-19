@@ -20,7 +20,7 @@ global.DEBUG_LOCAL_MODE = DEBUG_LOCAL_MODE;
 
 var ipc = electron.ipcMain;
 
-var settings = {
+global.settings = {
 	message_display_period: 5000
 };
 
@@ -41,6 +41,7 @@ var preloadedUserInfo = {};
 var workAreaSize = {};
 var quickMessageMaxHeight;
 
+var settingsWindow = null;
 var profileWindow = null;
 
 var forceQuit = false;
@@ -54,16 +55,72 @@ function makeTrayIcon(api) {
 		{ type: 'separator' },
 		{label: 'Settings', type: 'normal', click: ()=> showSettingsWindow()},
 		{ type: 'separator' },
-		{ label: 'Logout', type: 'normal', click: () => { if (!DEBUG_LOCAL_MODE) api.logout(() => app.quit()); } },
+		{ label: 'Logout', type: 'normal', click: () => { 
+			forceQuit = true;
+			saveSettings();
+			if (!DEBUG_LOCAL_MODE) api.logout(() => app.quit()); 
+		} },
 		{ label: 'Quit', type: 'normal', click: () => {
 			//Quit pressed
 			forceQuit = true;
+			saveSettings();
 			app.quit();
 		} }
 	])
 	tray.setToolTip('Kiefer Messenger')
 	tray.setContextMenu(contextMenu)
 
+}
+
+function showSettingsWindow(){
+	console.log('Show settings window request.');
+	if(settingsWindow != null){
+		//Show window to move it to the front.
+		settingsWindow.show();
+		return console.log('Settings window is not null.');
+	}
+
+	settingsWindow = new BrowserWindow({
+		width: 480,
+		height: 560,
+		frame: true,
+		transparent: false,
+		show: true,
+		icon: './img/ico24.png',
+		alwaysOnTop: false,
+		skipTaskbar: false,
+		autoHideMenuBar: true
+	});
+
+	settingsWindow.loadURL(url.format({
+		pathname: path.join(__dirname, 'settings.html'),
+		protocol: 'file',
+		slashes: true
+	}));
+
+	/**
+	 * I decided not to keep the settings window alive and hidden when `closed` (like the profile window) because the settings window is not opened/closed enough for the quickness. Instead, the window will be destroyed and save about 20MB RAM.
+	 */
+	settingsWindow.on('closed', (event)=>{
+		console.log('Settings window closed.');
+		saveSettings();
+		settingsWindow = null;
+	});
+}
+
+function loadSettings(){
+	console.log('Loading settings...');
+	var loadedSettings = JSON.parse(fs.readFileSync('./prefs.json'));
+	for(var prop in loadedSettings){
+		global.settings[prop] = loadedSettings[prop];
+	}
+	console.log('Loaded settings.');
+}
+
+function saveSettings(){
+	console.log('Saving settings...');
+	fs.writeFileSync('./prefs.json', JSON.stringify(global.settings));
+	console.log('Saved settings.');
 }
 
 function showProfileWindow(api, defaultTab) {
@@ -96,8 +153,9 @@ function showProfileWindow(api, defaultTab) {
 		if(!forceQuit){
 			event.preventDefault();
 			profileWindow.hide();
-			console.log('Profile window hidden.');
+			return console.log('Profile window hidden.');
 		}
+		profileWindow = null;
 	}
 	);
 
@@ -148,6 +206,7 @@ ipc.on('openThread', (event, data) => {
 });
 
 app.on('ready', () => {
+	loadSettings();
 	if (DEBUG_LOCAL_MODE) {
 		const debugMsg1 = globalShortcut.register('CmdOrCtrl+M', () => {
 			handleMessage(null, {
@@ -228,7 +287,7 @@ function userLogin() {
 		slashes: true
 	}));
 	ipc.on('loginDomReady', (event, data) => {
-		try { event.sender.send('setLastLogin', JSON.parse(fs.readFileSync('./prefs.json'))); } catch (e) {
+		try { event.sender.send('setLastLogin', settings.lastLoginEmail); } catch (e) {
 			console.error(e);
 			console.log('Error reading prefs.json.');
 		}
@@ -261,7 +320,7 @@ function userLogin() {
 			}
 
 			//Save email
-			fs.writeFileSync('prefs.json', JSON.stringify({ lastLoginEmail: data.email }));
+			settings.lastLoginEmail = data.email;
 			console.log('Login success!');
 
 			fs.writeFileSync('appstate.json', JSON.stringify(api.getAppState()));
@@ -420,7 +479,9 @@ function handleMessage(api, message) {
 
 		newWin.restartCloseTimer = function () {
 			clearTimeout(newWin.autoCloseTimeout);
-			newWin.autoCloseTimeout = setTimeout(animateCloseFunction, 5000);
+			if(global.settings.message_display_period > 0){
+				newWin.autoCloseTimeout = setTimeout(animateCloseFunction, global.settings.message_display_period);
+			}
 		}
 
 		newWin.forceAutoClose = function () {
