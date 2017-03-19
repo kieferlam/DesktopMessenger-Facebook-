@@ -38,3 +38,4 @@ DesktopMessenger could only be made possible with:
 
    * [Facebook-Chat-Api by Schmavery](https://github.com/Schmavery/facebook-chat-api)
    * [Electron](http://electron.atom.io/)
+   * [Google's Material Design Icons](https://material.io/icons/)
