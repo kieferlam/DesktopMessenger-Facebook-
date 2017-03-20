@@ -24,6 +24,7 @@ All program files are created and stored local to the program.
 * Accounts with 2-factor authentication will not be able to log in. 
   Please disable 2FA, log in with DesktopMessenger, then re-enable 2FA if you wish to do so.
   You will stay logged in if you do not log out of DesktopMessenger.
+* Placing the application in a location where the user has no read/write permissions (e.g. Program Files) will cause the application to crash (i.e. stop working and display an error message). This can be fixed by running the application with elevated control (i.e. Run as Admin) or simply placing the application folder in a location where the user has read/write permissions (e.g. Documents).
 
 ## Install Without Install Package
 If you want to use this application without using the ZIP file, follow:
