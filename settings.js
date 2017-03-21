@@ -1,8 +1,14 @@
 const electron = require('electron');
 
+var ipc = electron.ipcRenderer;
+
 const remote = electron.remote;
 
-var ipc = electron.ipcRenderer;
+window.onerror = function(error, url, line){
+    mainLog("Error at line " + line + ": " + error);
+};
+
+const AutoLaunch = require('auto-launch');
 
 const $ = require('jquery');
 
@@ -27,15 +33,15 @@ function setPanelListItemStyle() {
     $('#' + selected_panel).addClass('settings_list_item_selected');
 }
 
-function setDisplaySettingsPanel(){
-    var panelID = $('#'+selected_panel).attr('data-panel');
+function setDisplaySettingsPanel() {
+    var panelID = $('#' + selected_panel).attr('data-panel');
     //hide all panels
-    setting_panels.forEach((panel_name)=>{
-        var pan_id = $('#'+panel_name).attr('data-panel');
-        $('#'+pan_id).css({display: 'none'});
+    setting_panels.forEach((panel_name) => {
+        var pan_id = $('#' + panel_name).attr('data-panel');
+        $('#' + pan_id).css({ display: 'none' });
     });
     //Show one panel
-    $('#'+panelID).css({display: 'unset'});
+    $('#' + panelID).css({ display: 'unset' });
 }
 
 function setup() {
@@ -67,7 +73,17 @@ function setupMessagePreviewPanel() {
 }
 
 function setupSystemPanel() {
-
+    var selfAutoLaunch = new AutoLaunch({ name: 'DesktopMessenger' });
+    $('#launch_on_startup-checkbox').prop('checked', selfAutoLaunch.isEnabled());
+    $('#launch_on_startup-checkbox').change((event)=>{
+        if($('#launch_on_startup-checkbox').is(':checked')){
+            mainLog('Enabling launch on system startup.');
+            selfAutoLaunch.enable((err)=>mainLog('Error: Could\'t enable launch_on_startup.'));
+        }else{
+            mainLog('Disabling launch on system startup.');
+            selfAutoLaunch.disable((err)=>mainLog('Error: Could\'t disable launch_on_startup.'));
+        }
+    });
 }
 
 
