@@ -304,8 +304,7 @@ function runLogin(useAppState) {
 	if (DEBUG_LOCAL_MODE) {
 		console.log('Debug mode. Skipping login.');
 		loginSuccess(null);
-	}
-	else {
+	} else {
 		if (useAppState) {
 			try {
 				login({ appState: JSON.parse(fs.readFileSync(appstateFile, 'utf8')) }, (err, api) => {
