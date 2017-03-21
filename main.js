@@ -2,10 +2,13 @@
 
 const electron = require('electron');
 //globalShortcut for global keyboard events for testing
-const { app, BrowserWindow, Tray, Menu, Dialog, globalShortcut } = electron;
+const { app, BrowserWindow, Tray, Menu, dialog, globalShortcut } = electron;
 const url = require('url');
 const path = require('path');
 const fs = require('fs');
+const request = require('request');
+const appPackage = require('./package.json');
+const spawn = require('child_process').spawn;
 
 const message_win_width = 360;
 
@@ -21,6 +24,7 @@ global.DEBUG_LOCAL_MODE = DEBUG_LOCAL_MODE;
 var ipc = electron.ipcMain;
 
 global.settings = {
+	autoUpdate: true,
 	message_display_period: 5000
 };
 
@@ -216,41 +220,79 @@ ipc.on('openThread', (event, data) => {
 	console.log('Open thread request. Thread ID: ' + data);
 });
 
+function checkForUpdates(callback) {
+	console.log('Checking for updates...');
+	request('https://raw.githubusercontent.com/mangopearapples/DesktopMessenger/master/release/LATEST_VERSION', (error, response, data) => {
+		var curr_ver_int = parseInt(appPackage.version.replace(/\./g, ''));
+		var latest_ver_int = parseInt(data.replace(/\./g, ''));
+		if (latest_ver_int > curr_ver_int) {
+			console.log('New update found.');
+			dialog.showMessageBox({
+				title: 'Update',
+				type: 'question',
+				message: 'There is a new update for DesktopMessenger. Do you want to update?',
+				buttons: ['No', 'Yes']
+			}, (response) => {
+				if (response == 0) {
+					//No, don't do the update
+					console.log('Skipping update.')
+					callback();
+				} else {
+					//Yes, do update!
+					console.log('Running update process...');
+					var child_proc = spawn(app.getPath('exe'), ['updater.asar'], {
+						detached: true,
+						stdio: ['ignore', 'ignore', 'ignore']
+					});
+					child_proc.unref();
+					app.quit();
+				}
+			});
+		} else {
+			callback();
+		}
+	});
+}
+
 app.on('ready', () => {
-	loadSettings();
-	if (DEBUG_LOCAL_MODE) {
-		const debugMsg1 = globalShortcut.register('CmdOrCtrl+M', () => {
-			handleMessage(null, {
-				senderID: 'TestID',
-				body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus imperdiet tristique nunc in tristique. Etiam fringilla ligula magna, quis aliquam.',
-				threadID: 'TestThreadID',
-				messageID: 'TestMsgID',
-				attachments: [],
-				isGroup: false
+	console.log('DesktopMessenger ver. ' + appPackage.version);
+	checkForUpdates(() => {
+		loadSettings();
+		if (DEBUG_LOCAL_MODE) {
+			const debugMsg1 = globalShortcut.register('CmdOrCtrl+M', () => {
+				handleMessage(null, {
+					senderID: 'TestID',
+					body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus imperdiet tristique nunc in tristique. Etiam fringilla ligula magna, quis aliquam.',
+					threadID: 'TestThreadID',
+					messageID: 'TestMsgID',
+					attachments: [],
+					isGroup: false
+				});
 			});
-		});
-		const debugMsg2 = globalShortcut.register('CmdOrCtrl+L', () => {
-			handleMessage(null, {
-				senderID: 'TestID2',
-				body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus imperdiet tristique nunc in tristique. Etiam fringilla ligula magna, quis aliquam.',
-				threadID: 'TestThreadID2',
-				messageID: 'TestMsgID2',
-				attachments: [],
-				isGroup: false
+			const debugMsg2 = globalShortcut.register('CmdOrCtrl+L', () => {
+				handleMessage(null, {
+					senderID: 'TestID2',
+					body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus imperdiet tristique nunc in tristique. Etiam fringilla ligula magna, quis aliquam.',
+					threadID: 'TestThreadID2',
+					messageID: 'TestMsgID2',
+					attachments: [],
+					isGroup: false
+				});
 			});
-		});
-		const debugMsg3 = globalShortcut.register('CmdOrCtrl+H', () => {
-			handleMessage(null, {
-				senderID: 'TestID3',
-				body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus imperdiet tristique nunc in tristique. Etiam fringilla ligula magna, quis aliquam.',
-				threadID: 'TestThreadID3',
-				messageID: 'TestMsgID3',
-				attachments: [],
-				isGroup: false
+			const debugMsg3 = globalShortcut.register('CmdOrCtrl+H', () => {
+				handleMessage(null, {
+					senderID: 'TestID3',
+					body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus imperdiet tristique nunc in tristique. Etiam fringilla ligula magna, quis aliquam.',
+					threadID: 'TestThreadID3',
+					messageID: 'TestMsgID3',
+					attachments: [],
+					isGroup: false
+				});
 			});
-		});
-	}
-	runLogin(true);
+		}
+		runLogin(true);
+	});
+
 });
 
 app.on('before-quit', () => {
