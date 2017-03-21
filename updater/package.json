@@ -1,0 +1,11 @@
+{
+  "name": "DesktopMessengerUpdater",
+  "version": "0.0.0",
+  "description": "Updater app for DesktopMessenger",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "Kiefer Lam",
+  "license": ""
+}
