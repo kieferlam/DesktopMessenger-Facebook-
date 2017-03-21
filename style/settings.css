@@ -44,6 +44,10 @@ ul{
     width: 100%;
 }
 
+.settings_list_item_selected{
+    background: rgb(39,59,100);
+}
+
 #nav_panel-div li{
     color: ghostwhite;
     font-size: 18pt;
@@ -56,7 +60,7 @@ ul{
 }
 
 #nav_panel-div li:hover{
-    background: rgb(36,54,91);
+    background: rgb(39,59,100);
 }
 
 #settings_panel-div{
