@@ -33,6 +33,7 @@ function updateApp(ver) {
     console.log('Created file write stream.');
     console.log('Querying download file.');
     var dl_url = 'https://raw.githubusercontent.com/mangopearapples/DesktopMessenger/master/release/' + ver + '/DesktopMessenger.asar';
+    console.log('Downloading from ' + dl_url);
     var req = https.get(dl_url, (response) => {
         response.on('data', (chunk)=>{
             file.write(chunk);
