@@ -7,14 +7,14 @@ DesktopMessenger is currently beta software so expect bugs and incomplete functi
 
 *Disclaimer*: We are not resposible for anything that happens to your account, e.g. account getting banned. DesktopMessenger does not store your password at all so any security problems will be unrelated to us or our software.
 
-## Install (Coming soon)
-To install, simply download the ZIP file (DesktopMessenger.zip) from /release/ and run DesktopMessenger.exe after you extract the ZIP file. 
+## Install
+To install, simply download the ZIP file (DesktopMessenger.zip) from [releases](https://github.com/mangopearapples/DesktopMessenger/releases) and run DesktopMessenger.exe after you extract the ZIP file. 
 The executable will prompt may prompt you to download an update which will download the latest version of the app.
 This is not an installer so please place it in an appropriate location and do not delete.
 
-## Updating (Coming soon)
+## Updating
 Everytime DesktopMessenger is launched, it will check for updates and prompt you to update if there is an update available. 
-You can turn this off in the settings.
+You can turn this off in the settings (coming soon).
 
 ## Uninstall
 Simply delete every file and folder extracted from the ZIP file. 
@@ -31,6 +31,7 @@ If you want to use this application without using the ZIP file, follow:
 
    1. Download Electron from http://electron.atom.io/
    2. Download the version of DesktopMessenger you want from /release/app/
+   3. Rename the downloaded `DesktopMesseger.asar` to `app.asar`
    3. Place downloaded app in the {Root of Electron}/resources/.
    4. To run, double click or run electron.exe.
 
