@@ -1,6 +1,7 @@
 "use strict";
 
 const electron = require('electron');
+
 //globalShortcut for global keyboard events for testing
 const { app, BrowserWindow, Tray, Menu, dialog, globalShortcut } = electron;
 const url = require('url');
@@ -28,8 +29,10 @@ global.settings = {
 	message_display_period: 5000
 };
 
-const appstateFile = './appstate.json';
-const settingsFile = './prefs.json';
+const APP_DATA_PATH = app.getPath('userData');
+
+const appstateFile = APP_DATA_PATH + '/appstate.json';
+const settingsFile = APP_DATA_PATH + '/prefs.json';
 
 var login = require('facebook-chat-api');
 var loggedIn = false;
@@ -339,10 +342,7 @@ function userLogin() {
 		slashes: true
 	}));
 	ipc.on('loginDomReady', (event, data) => {
-		try { event.sender.send('setLastLogin', settings.lastLoginEmail); } catch (e) {
-			console.error(e);
-			console.log('Error reading prefs.json.');
-		}
+		event.sender.send('setLastLogin', settings.lastLoginEmail);
 	});
 	loginWin.once('closed', () => {
 		if (!loggedIn) {
