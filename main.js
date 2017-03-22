@@ -4,6 +4,14 @@ const electron = require('electron');
 
 //globalShortcut for global keyboard events for testing
 const { app, BrowserWindow, Tray, Menu, dialog, globalShortcut } = electron;
+
+//Error handling
+process.on('uncaughtException', (err)=>{
+	console.log(err);
+	dialog.showErrorBox('Error', err);
+	app.quit();
+});
+
 const url = require('url');
 const path = require('path');
 const fs = require('fs');
