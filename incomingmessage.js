@@ -88,7 +88,7 @@ function message_html(message){
 }
 
 function sender_name(){
-    if(completeData.message.isGroup){
+    if(completeData.message.isGroup && completeData.threadInfo.nicknames != null){
         var nick = completeData.threadInfo.nicknames[lastSenderID.toString()];
         if(nick != null) return nick + ' (' + userInfo[lastSenderID].name + ') ';
     }
