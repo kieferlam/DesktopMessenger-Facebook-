@@ -6,7 +6,7 @@ const electron = require('electron');
 const { app, BrowserWindow, Tray, Menu, dialog, globalShortcut } = electron;
 
 //Error handling
-process.on('uncaughtException', (err)=>{
+process.on('uncaughtException', (err) => {
 	console.log(err);
 	dialog.showErrorBox('Error', err);
 	app.quit();
@@ -58,6 +58,8 @@ var preloadedUserInfo = {};
 
 var workAreaSize = {};
 var quickMessageMaxHeight;
+
+var conversations = [];
 
 var settingsWindow = null;
 var profileWindow = null;
@@ -227,39 +229,81 @@ function showProfileWindow(api, defaultTab) {
 	});
 }
 
-ipc.on('openThread', (event, data) => {
-	console.log('Open thread request. Thread ID: ' + data);
+ipc.on('openThread', (event, threadID) => {
+	console.log('Open thread request. Thread ID: ' + threadID);
+
+	//Check if conversation is already open
+	conversations.forEach((conv, index)=>{
+		if(conv.threadID == threadID){
+			console.log('Conversation['+threadID+'] is already open.');
+			conv.window.show();
+			return;
+		}
+	});
+
+	//Continue if no conversation exists with this threadID
+
+	var conversation = {threadID: threadID};
+
+	conversation.window = new BrowserWindow({
+		show: false,
+		width: 480,
+		height: 540,
+		autoHideMenuBar: true
+	});
+
+	//Append conversation to conversation list
+	conversations.push(conversation);
+
+	//Load the page
+	conversation.window.loadURL(url.format({
+		pathname: path.join(__dirname, 'conversation.html'),
+		protocol: 'file',
+		slashes: true
+	}));
+
+	//Remove conversation from the list when closed
+	conversation.window.on('closed', (event)=>{
+		console.log('Conversation['+conversation.threadID+'] closed.');
+		conversations.splice(conversations.indexOf(conversation), 1);
+	});
+	
 });
 
 function checkForUpdates(callback) {
 	console.log('Checking for updates...');
 	request('https://raw.githubusercontent.com/mangopearapples/DesktopMessenger/master/release/LATEST_VERSION', (error, response, data) => {
-		var curr_ver_int = parseInt(appPackage.version.replace(/\./g, ''));
-		var latest_ver_int = parseInt(data.replace(/\./g, ''));
-		if (latest_ver_int > curr_ver_int) {
-			console.log('New update found.');
-			dialog.showMessageBox({
-				title: 'Update',
-				type: 'question',
-				message: 'There is a new update for DesktopMessenger. Do you want to update?',
-				buttons: ['No', 'Yes']
-			}, (response) => {
-				if (response == 0) {
-					//No, don't do the update
-					console.log('Skipping update.')
-					callback();
-				} else {
-					//Yes, do update!
-					console.log('Running update process...');
-					var child_proc = spawn(app.getPath('exe'), ['updater.asar'], {
-						detached: true,
-						stdio: ['ignore', 'ignore', 'ignore']
-					});
-					child_proc.unref();
-					app.quit();
-				}
-			});
-		} else {
+		try {
+			var curr_ver_int = parseInt(appPackage.version.replace(/\./g, ''));
+			var latest_ver_int = parseInt(data.replace(/\./g, ''));
+			if (latest_ver_int > curr_ver_int) {
+				console.log('New update found.');
+				dialog.showMessageBox({
+					title: 'Update',
+					type: 'question',
+					message: 'There is a new update for DesktopMessenger. Do you want to update?',
+					buttons: ['No', 'Yes']
+				}, (response) => {
+					if (response == 0) {
+						//No, don't do the update
+						console.log('Skipping update.')
+						callback();
+					} else {
+						//Yes, do update!
+						console.log('Running update process...');
+						var child_proc = spawn(app.getPath('exe'), ['updater.asar'], {
+							detached: true,
+							stdio: ['ignore', 'ignore', 'ignore']
+						});
+						child_proc.unref();
+						app.quit();
+					}
+				});
+			} else {
+				callback();
+			}
+		} catch (e) {
+			console.log(e);
 			callback();
 		}
 	});
