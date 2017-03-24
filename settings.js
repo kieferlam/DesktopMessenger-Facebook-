@@ -13,12 +13,14 @@ const AutoLaunch = require('auto-launch');
 const $ = require('jquery');
 
 var settings;
+var package;
 
-var setting_panels = ['message_previews-li', 'application-li', 'system-li'];
+var setting_panels = ['message_previews-li', 'application-li', 'system-li', 'about-li'];
 var selected_panel = setting_panels[0];
 
 $(document).ready(() => {
     settings = remote.getGlobal('settings');
+    package = remote.getGlobal('package');
     setup();
 });
 
@@ -57,6 +59,7 @@ function setup() {
 
     setupMessagePreviewPanel();
     setupSystemPanel();
+    setupAboutPanel();
 }
 
 function setupMessagePreviewPanel() {
@@ -86,6 +89,10 @@ function setupSystemPanel() {
     });
 }
 
+function setupAboutPanel(){
+    $('#about_application_name-h1').text(package.name);
+    $('#about_version-h2').text('Version ' + package.version);
+}
 
 function mainLog(log) {
     ipc.send('console.log', log);
