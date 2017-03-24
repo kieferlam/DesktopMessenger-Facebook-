@@ -37,6 +37,8 @@ global.settings = {
 	message_display_period: 5000
 };
 
+global.package = appPackage;
+
 const APP_DATA_PATH = app.getPath('userData');
 
 const appstateFile = APP_DATA_PATH + '/appstate.json';
@@ -51,6 +53,8 @@ var displayingMessages = [];
 var preloadedThreads = [];
 const preloadThreadAmount = 10;
 var preloadedThreadsIndex = 0;
+
+const CONVERSATION_LOAD_AMOUNT = 10;
 
 var currentUserID;
 var currentUserInfo;
@@ -67,9 +71,11 @@ var profileWindow = null;
 
 var forceQuit = false;
 
-function fb(callback){
-	if(facebook != null){
+function fb(callback) {
+	if (facebook != null && facebook != undefined) {
 		callback(facebook);
+	} else {
+		console.log('Facebook API is null.');
 	}
 }
 
@@ -98,7 +104,7 @@ function makeTrayIcon(api) {
 			}
 		}
 	])
-	tray.setToolTip('Kiefer Messenger')
+	tray.setToolTip(appPackage.name)
 	tray.setContextMenu(contextMenu)
 
 }
@@ -225,7 +231,7 @@ function showProfileWindow(api, defaultTab) {
 
 	ipc.on('preloadMoreThreads', (event) => {
 		console.log('Load more threads request.');
-		loadNextThreads(api, (threads) => {
+		loadNextThreads((threads) => {
 			var threadSendPackage = { messageThreads: threads };
 			loadRelevantUserInfo(api, threads, (userData) => {
 				threadSendPackage.participantInfo = preloadedUserInfo;
@@ -240,17 +246,22 @@ ipc.on('openThread', (event, threadID) => {
 	console.log('Open thread request. Thread ID: ' + threadID);
 
 	//Check if conversation is already open
-	conversations.forEach((conv, index)=>{
-		if(conv.threadID == threadID){
-			console.log('Conversation['+threadID+'] is already open.');
+	conversations.forEach((conv, index) => {
+		if (conv.threadID == threadID) {
+			console.log('Conversation[' + threadID + '] is already open.');
 			conv.window.show();
 			return;
 		}
 	});
 
 	//Continue if no conversation exists with this threadID
+	console.log('No conversation with threadID ' + threadID);
 
-	var conversation = {threadID: threadID};
+	var conversation = {
+		threadID: threadID,
+		loadedHistoryStart: 0
+	};
+	conversation.id = 'Conversation[' + conversation.threadID + ']';
 
 	conversation.window = new BrowserWindow({
 		show: false,
@@ -258,6 +269,9 @@ ipc.on('openThread', (event, threadID) => {
 		height: 540,
 		autoHideMenuBar: true
 	});
+
+	//Defining conversation history
+	conversation.history = [];
 
 	//Append conversation to conversation list
 	conversations.push(conversation);
@@ -270,27 +284,51 @@ ipc.on('openThread', (event, threadID) => {
 	}));
 
 	//Remove conversation from the list when closed
-	conversation.window.on('closed', (event)=>{
-		console.log('Conversation['+conversation.threadID+'] closed.');
+	conversation.window.on('closed', (event) => {
+		console.log(conversation.id + ' closed.');
 		conversations.splice(conversations.indexOf(conversation), 1);
 	});
-	
+
 	//Send conversation data when DOM is loaded
-	ipc.once('conversation_DOM_loaded', (event)=>{
+	ipc.once('conversation_DOM_loaded', (event) => {
+		console.log(conversation.id + ' DOM loaded.');
 		//Check if thread exists in preloaded threads
 		var threadIndex = -1;
-		preloadedThreads.forEach((thread, index)=>{
-			if(thread.threadID == conversation.threadID){
+		preloadedThreads.forEach((thread, index) => {
+			if (thread.threadID == conversation.threadID) {
 				threadIndex = index;
 				return;
 			}
 		});
 
-		if(threadIndex < 0){
-			fb((api)=>{
-				
+		if (threadIndex < 0) {
+			console.log(conversation.id + ' thread is not loaded.');
+			conversation.window.close();
+		} else {
+			console.log(conversation.id + ' thread is already loaded.');
+			//Load thread history
+			fb((api) => {
+				console.log('Performing API getThreadHistory on ' + conversation.id);
+				var thread = preloadedThreads.filter((thr) => thr.threadID == conversation.threadID)[0];
+				api.getThreadHistory(conversation.threadID, conversation.loadedHistoryStart, conversation.loadedHistoryStart + CONVERSATION_LOAD_AMOUNT, undefined, (err, history) => {
+					if (err) return console.log(err);
+					console.log(conversation.id + ' history loaded.');
+					//Append history to conversation
+					history.forEach((msg, index) => {
+						conversation.history.push(msg);
+					});
+					conversation.loadedHistoryStart += CONVERSATION_LOAD_AMOUNT;
+					//Send history to conversation process
+					event.sender.send('receive_history', history);
+				});
 			});
 		}
+	});
+
+	//Display when ready
+	ipc.on('conversation_show', (event) => {
+		console.log('Showing Conversation[' + conversation.threadID + ']');
+		conversation.window.show();
 	});
 
 });
@@ -306,7 +344,7 @@ function checkForUpdates(callback) {
 				dialog.showMessageBox({
 					title: 'Update',
 					type: 'question',
-					message: 'There is a new update for DesktopMessenger. Do you want to update?',
+					message: 'There is a new update for '+appPackage.name+'. Do you want to update?',
 					buttons: ['No', 'Yes']
 				}, (response) => {
 					if (response == 0) {
@@ -335,7 +373,7 @@ function checkForUpdates(callback) {
 }
 
 app.on('ready', () => {
-	console.log('DesktopMessenger ver. ' + appPackage.version);
+	console.log(appPackage.name + ' ver. ' + appPackage.version);
 	checkForUpdates(() => {
 		loadSettings();
 		if (DEBUG_LOCAL_MODE) {
@@ -495,16 +533,18 @@ function loadRelevantUserInfo(api, threads, callback) {
 
 }
 
-function loadNextThreads(api, callback) {
-	api.getThreadList(preloadedThreadsIndex, preloadedThreadsIndex + preloadThreadAmount, (err, arr) => {
-		try {
-			arr.forEach((elem) => preloadedThreads.push(elem));
-			if (callback != undefined && callback != null) callback(arr);
-		} catch (e) {
-			console.error(e);
-		} finally {
-			preloadedThreadsIndex += preloadThreadAmount;
-		}
+function loadNextThreads(callback) {
+	fb((api) => {
+		api.getThreadList(preloadedThreadsIndex, preloadedThreadsIndex + preloadThreadAmount, (err, arr) => {
+			try {
+				arr.forEach((elem) => preloadedThreads.push(elem));
+				if (callback != undefined && callback != null) callback(arr);
+			} catch (e) {
+				console.error(e);
+			} finally {
+				preloadedThreadsIndex += preloadThreadAmount;
+			}
+		});
 	});
 }
 
@@ -520,7 +560,7 @@ function loginSuccess(api) {
 
 		//Preload thread data
 		console.log('Loading ' + preloadThreadAmount + ' threads.');
-		loadNextThreads(api, (arr) => {
+		loadNextThreads((arr) => {
 			console.log('Loaded ' + preloadedThreads.length + ' threads.');
 
 			console.log('Loading user info.');
@@ -532,7 +572,7 @@ function loginSuccess(api) {
 
 			api.listen((err, message) => {
 				if (err) return console.error(err);
-				if(message.type == 'message'){
+				if (message.type == 'message') {
 					handleMessage(api, message);
 				}
 			});
