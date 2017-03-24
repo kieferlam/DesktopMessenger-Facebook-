@@ -44,6 +44,7 @@ const settingsFile = APP_DATA_PATH + '/prefs.json';
 
 var login = require('facebook-chat-api');
 var loggedIn = false;
+var facebook = null;
 
 var displayingMessages = [];
 
@@ -65,6 +66,12 @@ var settingsWindow = null;
 var profileWindow = null;
 
 var forceQuit = false;
+
+function fb(callback){
+	if(facebook != null){
+		callback(facebook);
+	}
+}
 
 let tray = null;
 function makeTrayIcon(api) {
@@ -268,6 +275,24 @@ ipc.on('openThread', (event, threadID) => {
 		conversations.splice(conversations.indexOf(conversation), 1);
 	});
 	
+	//Send conversation data when DOM is loaded
+	ipc.once('conversation_DOM_loaded', (event)=>{
+		//Check if thread exists in preloaded threads
+		var threadIndex = -1;
+		preloadedThreads.forEach((thread, index)=>{
+			if(thread.threadID == conversation.threadID){
+				threadIndex = index;
+				return;
+			}
+		});
+
+		if(threadIndex < 0){
+			fb((api)=>{
+				
+			});
+		}
+	});
+
 });
 
 function checkForUpdates(callback) {
@@ -368,6 +393,7 @@ function runLogin(useAppState) {
 						console.error(err);
 						runLogin(false);
 					} else {
+						facebook = api;
 						loginSuccess(api);
 					}
 				});
@@ -506,7 +532,9 @@ function loginSuccess(api) {
 
 			api.listen((err, message) => {
 				if (err) return console.error(err);
-				handleMessage(api, message);
+				if(message.type == 'message'){
+					handleMessage(api, message);
+				}
 			});
 		});
 	}
