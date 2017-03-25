@@ -6,7 +6,12 @@ const DEBUG_LOCAL_MODE = remote.getGlobal('DEBUG_LOCAL_MODE');
 
 var ipc = electron.ipcRenderer;
 
+window.onerror = function (error, url, line) {
+    mainLog("Error at line " + line + ": " + error);
+};
+
 const $ = require('jquery');
+require('jquery.easing');
 
 var interacted = false;
 
@@ -19,10 +24,6 @@ var userInfo;
 
 var lastSenderID = 0;
 var lastMessageTime = '0';
-
-window.onerror = function (error, url, line) {
-    mainLog("Error at line " + line + ": " + error);
-};
 
 $(document).ready(() => {
     ipc.send('messageDomReady');
@@ -66,6 +67,13 @@ ipc.on('anotherMessage', (event, userInfo) => {
 });
 
 function appendMessage(message) {
+    //Scroll to bottom after message append if the window is already scrolled to the bottom, otherwise stay.
+    var doScroll = false;
+    if (!($(window).scrollTop() < $(document).height() - $(window).height())) {
+        doScroll = true;
+    }
+
+    //Actual message append
     var date = new Date(Date.now());
     var acc_to_min = ('0' + date.getHours()).slice(-2) + ':' + ('0' + date.getMinutes()).slice(-2);
     if (lastSenderID != message.senderID || lastMessageTime != acc_to_min) {
@@ -77,6 +85,17 @@ function appendMessage(message) {
         $('#messages_container').append('<div class="message-container">' + message_html(message) + '</div>');
     }
     $('#content-div').height($('body')[0].scrollHeight);
+
+    //Scroll
+    if (doScroll) {
+        mainLog('Scrolling to bottom.');
+        $('html, body').animate({
+            scrollTop: $(document).height() - $(window).height()
+        },
+            250,
+            "easeOutQuint"
+        );
+    }
 }
 
 function sender_img_html(message) {
