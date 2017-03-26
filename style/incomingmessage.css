@@ -48,7 +48,7 @@ header{
 #thread_pic{
     width: 48px;
     height: 48px;
-    border-radius: 1000px;
+    border-radius: 100%;
     margin: 4px;
     display:inline-block;
 }
@@ -106,7 +106,7 @@ header{
     float:right;
 
     border: none;
-    border-radius: 1000px;
+    border-radius: 100%;
     background-color: #2196F3;
     background-image: url('../img/ico_edit.png');
     background-position: 4px 4px;
@@ -196,7 +196,7 @@ header{
     vertical-align: bottom;
 
     border: none;
-    border-radius: 1000px;
+    border-radius: 100%;
     background-color: #2196F3;
     background-image: url('../img/ico_done.png');
     background-position: 2px 2px;

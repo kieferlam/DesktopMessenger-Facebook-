@@ -31,7 +31,7 @@ body{
     min-height: 13.3vh;
     width: 26.7vw;
     height: 26.7vw;
-    border-radius: 999999px;
+    border-radius: 100%;
     float: left;
     margin: 2px;
 }
@@ -116,7 +116,7 @@ body{
 
     float: left;
 
-    border-radius: 9999999px;
+    border-radius: 100%;
 }
 
 .messages-list-item{
