@@ -7,12 +7,12 @@
     margin:0;
     padding:0;
     font-family: font-main;
-    /*background: rgba(0,255,0,0.1);*/
+    background: rgba(0,255,0,0.1);
 }
 
 body{
     width: 100%;
-    height: 100vh;
+    height: 100%;
 }
 
 #content-div{
@@ -20,6 +20,73 @@ body{
     height: 100%;
 }
 
+#conversation_header-div{
+    display: block;
+    height: 64px;
+    width: 100%;
+}
+
 #conversation-img{
+    border: none;
+    border-radius: 100%;
+    width: 64px;
+    height: 64px;
+    float: left;
+}
+
+
+
+#conversation_messages-div{
+    width: 100%;
+    height: calc(100vh - 98px);
+    overflow-x: hidden;
+    overflow-y: scroll;
+}
+
+.conversation_message-div{
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.conversation_message_timestamp-div{
+    display: block;
+    width:100%;
+    height: auto;
+}
+
+.conversation_message_sender_img-div{
+    float:left;
+}
+
+.conversation_message_sender-img{
+    float: left;
+    width: 48px;
+    height: 48px;
+}
+
+
+#conversation_send-div{
+    display:block;
+    position: absolute;
+    left:0;
+    width:100%;
+    top: calc(100% - 34px);
+    height: 32px;
+}
+
+#conversation_send_message-textarea{
+    float: left;
+    width: calc(100% - 40px);
+    height: 100%;
+    border-radius: 8px;
+    resize: vertical;
+}
+
+#conversation_send-button{
+    margin-left: 2px;
+    width: 32px;
+    height: 32px;
+    overflow: hidden;
     border-radius: 100%;
 }
