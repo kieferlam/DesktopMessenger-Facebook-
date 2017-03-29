@@ -7,7 +7,7 @@
     margin:0;
     padding:0;
     font-family: font-main;
-    background: rgba(0,255,0,0.1);
+    /*background: rgba(0,255,0,0.1);*/
 }
 
 body{
@@ -63,6 +63,18 @@ body{
     float: left;
     width: 48px;
     height: 48px;
+}
+
+.conversation_message_content-div{
+    display:block;
+    width: calc(100% - 48px);
+}
+
+.conversation_message_content-div p{
+    display:block;
+    width: 100%;
+    word-wrap: break-word;
+    margin-left: 48px;
 }
 
 
