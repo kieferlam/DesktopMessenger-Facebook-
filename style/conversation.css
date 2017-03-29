@@ -24,6 +24,7 @@ body{
     display: block;
     height: 64px;
     width: 100%;
+    background: whitesmoke;
 }
 
 #conversation-img{
@@ -53,6 +54,7 @@ body{
     display: block;
     width:100%;
     height: auto;
+    font-size: 16pt;
 }
 
 .conversation_message_sender_img-div{
@@ -72,9 +74,10 @@ body{
 
 .conversation_message_content-div p{
     display:block;
-    width: 100%;
+    width: calc(100% - 8px); /* 4px border */
     word-wrap: break-word;
-    margin-left: 48px;
+    margin-left: 52px;
+    font-size: 14pt;
 }
 
 
