@@ -8,7 +8,6 @@ const { app, BrowserWindow, Tray, Menu, dialog, globalShortcut } = electron;
 //Error handling
 process.on('uncaughtException', (err) => {
 	console.log(err);
-	dialog.showErrorBox('Error', err);
 	app.quit();
 });
 
@@ -246,13 +245,16 @@ ipc.on('openThread', (event, threadID) => {
 	console.log('Open thread request. Thread ID: ' + threadID);
 
 	//Check if conversation is already open
+	var alreadyOpen = false;
 	conversations.forEach((conv, index) => {
 		if (conv.threadID == threadID) {
 			console.log('Conversation[' + threadID + '] is already open.');
 			conv.window.show();
+			alreadyOpen = true;
 			return;
 		}
 	});
+	if(alreadyOpen) return;
 
 	//Continue if no conversation exists with this threadID
 	console.log('No conversation with threadID ' + threadID);
@@ -265,8 +267,8 @@ ipc.on('openThread', (event, threadID) => {
 
 	conversation.window = new BrowserWindow({
 		show: false,
-		width: 480,
-		height: 540,
+		width: 360,
+		height: 480,
 		autoHideMenuBar: true
 	});
 
@@ -306,10 +308,12 @@ ipc.on('openThread', (event, threadID) => {
 			conversation.window.close();
 		} else {
 			console.log(conversation.id + ' thread is already loaded.');
+			var thread = preloadedThreads[threadIndex];
+			//Send thread info
+			event.sender.send('receive_thread', {thread: thread, userID: currentUserID});
 			//Load thread history
 			fb((api) => {
 				console.log('Performing API getThreadHistory on ' + conversation.id);
-				var thread = preloadedThreads.filter((thr) => thr.threadID == conversation.threadID)[0];
 				api.getThreadHistory(conversation.threadID, conversation.loadedHistoryStart, conversation.loadedHistoryStart + CONVERSATION_LOAD_AMOUNT, undefined, (err, history) => {
 					if (err) return console.log(err);
 					console.log(conversation.id + ' history loaded.');
@@ -326,7 +330,7 @@ ipc.on('openThread', (event, threadID) => {
 	});
 
 	//Display when ready
-	ipc.on('conversation_show', (event) => {
+	ipc.once('conversation_show', (event) => {
 		console.log('Showing Conversation[' + conversation.threadID + ']');
 		conversation.window.show();
 	});
@@ -344,7 +348,7 @@ function checkForUpdates(callback) {
 				dialog.showMessageBox({
 					title: 'Update',
 					type: 'question',
-					message: 'There is a new update for '+appPackage.name+'. Do you want to update?',
+					message: 'There is a new update for ' + appPackage.name + '. Do you want to update?',
 					buttons: ['No', 'Yes']
 				}, (response) => {
 					if (response == 0) {
