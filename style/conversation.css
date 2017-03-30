@@ -35,8 +35,6 @@ body{
     float: left;
 }
 
-
-
 #conversation_messages-div{
     width: 100%;
     height: calc(100vh - 98px);
@@ -62,24 +60,38 @@ body{
 }
 
 .conversation_message_sender-img{
-    float: left;
     width: 48px;
     height: 48px;
 }
 
 .conversation_message_content-div{
     display:block;
-    width: calc(100% - 48px);
+    width: calc(100% - 64px);
+    margin-left: 52px;
+    background: rgb(231,235,243);
+    border-radius: 0 5px 5px 5px;
 }
 
 .conversation_message_content-div p{
     display:block;
     width: calc(100% - 8px); /* 4px border */
     word-wrap: break-word;
-    margin-left: 52px;
+    padding: 4px;
     font-size: 14pt;
 }
 
+/* User message */
+.conversation_message_sender_img_user-div{
+    float:right;
+}
+
+.conversation_message_content_user-div{
+    display:block;
+    width: calc(100% - 64px);
+    margin-left: 12px;
+    background: rgb(231,235,243);
+    border-radius: 0 5px 5px 5px;
+}
 
 #conversation_send-div{
     display:block;
