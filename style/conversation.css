@@ -25,6 +25,7 @@ body{
     height: 64px;
     width: 100%;
     background: whitesmoke;
+    overflow: hidden;
 }
 
 #conversation-img{
@@ -81,6 +82,10 @@ body{
 }
 
 /* User message */
+.conversation_message_timestamp_user-div{
+    text-align: right;
+}
+
 .conversation_message_sender_img_user-div{
     float:right;
 }
@@ -90,7 +95,15 @@ body{
     width: calc(100% - 64px);
     margin-left: 12px;
     background: rgb(231,235,243);
-    border-radius: 0 5px 5px 5px;
+    border-radius: 5px 0px 5px 5px;
+}
+
+.conversation_message_content_user-div p{
+    display:block;
+    width: calc(100% - 8px); /* 4px border */
+    word-wrap: break-word;
+    padding: 4px;
+    font-size: 14pt;
 }
 
 #conversation_send-div{
