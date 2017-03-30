@@ -310,7 +310,7 @@ ipc.on('openThread', (event, threadID) => {
 			console.log(conversation.id + ' thread is already loaded.');
 			var thread = preloadedThreads[threadIndex];
 			//Send thread info
-			event.sender.send('receive_thread', {thread: thread, userID: currentUserID});
+			event.sender.send('receive_thread', {thread: thread, userID: currentUserID, userInfo: preloadedUserInfo[thread.participantIDs[0]]});
 			//Load thread history
 			fb((api) => {
 				console.log('Performing API getThreadHistory on ' + conversation.id);
