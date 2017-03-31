@@ -61,6 +61,7 @@ body{
 }
 
 .conversation_message_sender-img{
+    border-radius: 100%;
     width: 48px;
     height: 48px;
 }
