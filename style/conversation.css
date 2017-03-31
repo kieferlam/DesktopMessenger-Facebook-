@@ -47,6 +47,7 @@ body{
     display: block;
     width: 100%;
     height: auto;
+    clear: both;
 }
 
 .conversation_message_timestamp-div{
@@ -62,21 +63,22 @@ body{
 
 .conversation_message_sender-img{
     border-radius: 100%;
-    width: 48px;
-    height: 48px;
+    width: 32px;
+    height: 32px;
 }
 
 .conversation_message_content-div{
-    display:block;
-    width: calc(100% - 64px);
-    margin-left: 52px;
+    display:inline-block;
+    max-width: calc(100% - 64px);
+    margin-left: 4px;
     background: rgb(231,235,243);
     border-radius: 0 5px 5px 5px;
+    overflow: auto;
 }
 
 .conversation_message_content-div p{
-    display:block;
-    width: calc(100% - 8px); /* 4px border */
+    display: inline-block;
+    max-width: calc(100% - 8px); /* 4px border */
     word-wrap: break-word;
     padding: 4px;
     font-size: 14pt;
@@ -92,16 +94,19 @@ body{
 }
 
 .conversation_message_content_user-div{
-    display:block;
-    width: calc(100% - 64px);
+    max-width: calc(100% - 64px);
     margin-left: 12px;
     background: rgb(231,235,243);
     border-radius: 5px 0px 5px 5px;
+    overflow: auto;
+    float: right;
+    clear: left;
 }
 
 .conversation_message_content_user-div p{
-    display:block;
-    width: calc(100% - 8px); /* 4px border */
+    display: inline-block;
+    max-width: calc(100% - 8px); /* 4px border */
+    width: fit-content;
     word-wrap: break-word;
     padding: 4px;
     font-size: 14pt;
