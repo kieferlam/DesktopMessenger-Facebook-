@@ -9,6 +9,7 @@ window.onerror = function (error, url, line) {
 };
 
 const $ = require('jquery');
+require('jquery.easing');
 
 var thread = null;
 var userID = null;
@@ -17,7 +18,16 @@ var participantInfos = {};
 
 $(document).ready(() => {
     ipc.send('conversation_DOM_loaded');
+    setup();
 });
+
+function setup(){
+    $('#conversation_messages-div').scroll((event)=>{
+        if($('#conversation_messages-div').scrollTop() < 2){
+            
+        }
+    });
+}
 
 ipc.on('receive_thread', (event, data) => {
     thread = data.thread;
@@ -68,23 +78,58 @@ function appendMessage(msg) {
     } else {
         html = getMessageHTML(userInfo, msg.body, msg.timestamp);
     }
-    mainLog(msg);
+
     $('#conversation_messages-div').append(html);
+}
+
+function makeMessagesHTML(msgs) {
+    var buffer = '';
+    msgs.forEach((msg, index) => {
+        var userInfo = participantInfos[msg.senderID];
+        if (msg.senderID == userID) {
+            buffer += getUserMessageHTML(userInfo, msg.body, msg.timestamp);
+        } else {
+            buffer += getMessageHTML(userInfo, msg.body, msg.timestamp);
+        }
+    });
+    return buffer;
+}
+
+function appendMessages(msgs) {
+    var append = makeMessagesHTML(msgs);
+    $('#conversation_messages-div').prepend(append);
 }
 
 ipc.on('receive_history', (event, history) => {
 
+    messagesToAppend = [];
+
     history.forEach((msg, index) => {
         messages.push(msg);
         if (msg.type == 'message') {
-            appendMessage(msg);
+            messagesToAppend.push(msg);
         }
     });
+
+    appendMessages(messagesToAppend);
+
+    if(!checkScrollLocked()) scrollToBottom();
 
     event.sender.send('conversation_show');
 });
 
+function checkScrollLocked(){
+    return $('#conversation_messages-div').scrollTop() >= $('#conversation_messages-div')[0].scrollHeight - $('conversation_messages-div').height();
+}
 
+function scrollToBottom() {
+    $('#conversation_messages-div').animate({
+        scrollTop: $('#conversation_messages-div')[0].scrollHeight - $('#conversation_messages-div').height()
+    },
+        150,
+        "easeOutQuint"
+    );
+}
 
 function mainLog(log) {
     ipc.send('console.log', log);
