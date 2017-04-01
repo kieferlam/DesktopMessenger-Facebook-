@@ -254,7 +254,7 @@ ipc.on('openThread', (event, threadID) => {
 			return;
 		}
 	});
-	if(alreadyOpen) return;
+	if (alreadyOpen) return;
 
 	//Continue if no conversation exists with this threadID
 	console.log('No conversation with threadID ' + threadID);
@@ -310,23 +310,14 @@ ipc.on('openThread', (event, threadID) => {
 			console.log(conversation.id + ' thread is already loaded.');
 			var thread = preloadedThreads[threadIndex];
 			//Send thread info
-			event.sender.send('receive_thread', {thread: thread, userID: currentUserID, userInfos: preloadedUserInfo});
+			event.sender.send('receive_thread', { thread: thread, userID: currentUserID, userInfos: preloadedUserInfo });
 			//Load thread history
-			fb((api) => {
-				console.log('Performing API getThreadHistory on ' + conversation.id);
-				api.getThreadHistory(conversation.threadID, conversation.loadedHistoryStart, conversation.loadedHistoryStart + CONVERSATION_LOAD_AMOUNT, undefined, (err, history) => {
-					if (err) return console.log(err);
-					console.log(conversation.id + ' history loaded.');
-					//Append history to conversation
-					history.forEach((msg, index) => {
-						conversation.history.push(msg);
-					});
-					conversation.loadedHistoryStart += CONVERSATION_LOAD_AMOUNT;
-					//Send history to conversation process
-					event.sender.send('receive_history', history);
-				});
-			});
+			loadMessagesSync(event, conversation);
 		}
+	});
+
+	ipc.on('conversation_request_messages_sync', (event) => {
+		loadMessagesSync(event, conversation);
 	});
 
 	//Display when ready
@@ -336,6 +327,50 @@ ipc.on('openThread', (event, threadID) => {
 	});
 
 });
+
+ipc.on('conversation_request_messages_async', (event, threadID) => {
+	conversations.forEach((conv, index) => {
+		if (conv.threadID == threadID) {
+			fb((api) => {
+				console.log('Performing API getThreadHistory ASYNC on ' + conv.id + ' range[' + conv.loadedHistoryStart + ',' + (conv.loadedHistoryStart + CONVERSATION_LOAD_AMOUNT) + ']');
+				api.getThreadHistory(threadID, conv.loadedHistoryStart, conv.loadedHistoryStart + CONVERSATION_LOAD_AMOUNT, undefined, (err, history) => {
+					if (err) return console.log(err);
+					console.log(conv.id + ' history loaded.');
+					//Append history to conversation
+					history.forEach((msg, index) => {
+						conv.history.push(msg);
+					});
+					conv.loadedHistoryStart += CONVERSATION_LOAD_AMOUNT;
+					//Send history to conversation process
+					conv.window.webContents.send('receive_history', history);
+				});
+			});
+		}
+	});
+});
+
+function loadMessagesSync(event, conversation) {
+	fb((api) => {
+		console.log('Performing API getThreadHistory SYNC on ' + conversation.id + ' range[' + conversation.loadedHistoryStart + ',' + (conversation.loadedHistoryStart + CONVERSATION_LOAD_AMOUNT) + ']');
+		api.getThreadHistory(conversation.threadID, conversation.loadedHistoryStart, conversation.loadedHistoryStart + CONVERSATION_LOAD_AMOUNT, undefined, (err, history) => {
+			if (err) return console.log(err);
+			console.log(conversation.id + ' history loaded.');
+			//Append history to conversation
+			history.forEach((msg, index) => {
+				conversation.history.push(msg);
+			});
+			conversation.loadedHistoryStart += CONVERSATION_LOAD_AMOUNT;
+			//Send history to conversation process
+			if (event != undefined && event != null) {
+				event.sender.send('receive_history', history);
+			} else if (conversation != null && conversation != undefined) {
+				if (conversation.window.webContents != null && conversation.window.webContents != undefined) {
+					conversation.window.webContents.send('receive_history', history);
+				}
+			}
+		});
+	});
+}
 
 function checkForUpdates(callback) {
 	console.log('Checking for updates...');

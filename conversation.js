@@ -15,16 +15,18 @@ var thread = null;
 var userID = null;
 var messages = [];
 var participantInfos = {};
+var loadMessageSync = true;
 
 $(document).ready(() => {
     ipc.send('conversation_DOM_loaded');
     setup();
 });
 
-function setup(){
-    $('#conversation_messages-div').scroll((event)=>{
-        if($('#conversation_messages-div').scrollTop() < 2){
-            
+function setup() {
+    $('#conversation_messages-div').scroll((event) => {
+        if ($('#conversation_messages-div').scrollTop() == 0 && loadMessageSync) {
+            loadMessageSync = false;
+            ipc.send('conversation_request_messages_async', thread.threadID);
         }
     });
 }
@@ -113,13 +115,15 @@ ipc.on('receive_history', (event, history) => {
 
     appendMessages(messagesToAppend);
 
-    if(!checkScrollLocked()) scrollToBottom();
+    if (!checkScrollLocked()) scrollToBottom();
+
+    loadMessageSync = true;
 
     event.sender.send('conversation_show');
 });
 
-function checkScrollLocked(){
-    return $('#conversation_messages-div').scrollTop() >= $('#conversation_messages-div')[0].scrollHeight - $('conversation_messages-div').height();
+function checkScrollLocked() {
+    return $('#conversation_messages-div').scrollTop() >= $('#conversation_messages-div')[0].scrollHeight - $('conversation_messages-div').height() - 2;
 }
 
 function scrollToBottom() {
