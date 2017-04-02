@@ -104,6 +104,10 @@ function appendMessages(msgs) {
 
 ipc.on('receive_history', (event, history) => {
 
+    var shouldScroll = checkScrollLocked();
+    //Store the difference in scroll from bottom
+    var scrollFromBottom =  getBottomScroll() - $('#conversation_messages-div').scrollTop();
+
     messagesToAppend = [];
 
     history.forEach((msg, index) => {
@@ -115,7 +119,12 @@ ipc.on('receive_history', (event, history) => {
 
     appendMessages(messagesToAppend);
 
-    if (checkScrollLocked()) scrollToBottom();
+    //Should scroll to the bottom, not scroll at all
+    if (shouldScroll) {
+        scrollToBottom();
+    }else{
+        setScroll(getBottomScroll() - scrollFromBottom);        
+    }
 
     loadMessageSync = true;
 
@@ -126,13 +135,22 @@ function checkScrollLocked() {
     return $('#conversation_messages-div').scrollTop() >= $('#conversation_messages-div')[0].scrollHeight - $('#conversation_messages-div').height();
 }
 
-function scrollToBottom() {
+function setScroll(scroll){
+    $('#conversation_messages-div').scrollTop(scroll);
+}
+
+function scrollTo(scroll) {
     $('#conversation_messages-div').animate({
-        scrollTop: $('#conversation_messages-div')[0].scrollHeight - $('#conversation_messages-div').height()
-    },
-        150,
-        "easeOutQuint"
-    );
+        scrollTop: scroll
+    }, 150, "easeOutQuint");
+}
+
+function getBottomScroll(){
+    return $('#conversation_messages-div')[0].scrollHeight - $('#conversation_messages-div').height();
+}
+
+function scrollToBottom() {
+    scrollTo(getBottomScroll());
 }
 
 function log(log) {
