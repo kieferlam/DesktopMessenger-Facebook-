@@ -261,7 +261,7 @@ ipc.on('openThread', (event, threadID) => {
 
 	var conversation = {
 		threadID: threadID,
-		loadedHistoryStart: 0
+		lastMessageTimestamp: Date.now()
 	};
 	conversation.id = 'Conversation[' + conversation.threadID + ']';
 
@@ -332,15 +332,18 @@ ipc.on('conversation_request_messages_async', (event, threadID) => {
 	conversations.forEach((conv, index) => {
 		if (conv.threadID == threadID) {
 			fb((api) => {
-				console.log('Performing API getThreadHistory ASYNC on ' + conv.id + ' range[' + conv.loadedHistoryStart + ',' + (conv.loadedHistoryStart + CONVERSATION_LOAD_AMOUNT) + ']');
-				api.getThreadHistory(threadID, conv.loadedHistoryStart, conv.loadedHistoryStart + CONVERSATION_LOAD_AMOUNT, undefined, (err, history) => {
+				console.log('Performing API getThreadHistory ASYNC on ' + conv.id + ' timestamp[' +conv.lastMessageTimestamp+ ']');
+				api.getThreadHistory(threadID, 0, CONVERSATION_LOAD_AMOUNT, conv.lastMessageTimestamp, (err, history) => {
 					if (err) return console.log(err);
 					console.log(conv.id + ' history loaded.');
+					//Discard latest message as it's a duplicate
+					history.pop();
 					//Append history to conversation
 					history.forEach((msg, index) => {
 						conv.history.push(msg);
 					});
-					conv.loadedHistoryStart += CONVERSATION_LOAD_AMOUNT;
+					//Set last message time 
+					conv.lastMessageTimestamp = history.length > 0 ? history[0].timestamp : conv.lastMessageTimestamp ;
 					//Send history to conversation process
 					conv.window.webContents.send('receive_history', history);
 				});
@@ -351,15 +354,15 @@ ipc.on('conversation_request_messages_async', (event, threadID) => {
 
 function loadMessagesSync(event, conversation) {
 	fb((api) => {
-		console.log('Performing API getThreadHistory SYNC on ' + conversation.id + ' range[' + conversation.loadedHistoryStart + ',' + (conversation.loadedHistoryStart + CONVERSATION_LOAD_AMOUNT) + ']');
-		api.getThreadHistory(conversation.threadID, conversation.loadedHistoryStart, conversation.loadedHistoryStart + CONVERSATION_LOAD_AMOUNT, undefined, (err, history) => {
+		console.log('Performing API getThreadHistory ASYNC on ' + conversation.id + ' timestamp[' +conversation.lastMessageTimestamp+ ']');
+		api.getThreadHistory(conversation.threadID, 0, CONVERSATION_LOAD_AMOUNT, conversation.lastMessageTimestamp, (err, history) => {
 			if (err) return console.log(err);
 			console.log(conversation.id + ' history loaded.');
 			//Append history to conversation
 			history.forEach((msg, index) => {
 				conversation.history.push(msg);
 			});
-			conversation.loadedHistoryStart += CONVERSATION_LOAD_AMOUNT;
+			conversation.lastMessageTimestamp = history.length > 0 ? history[0].timestamp : conversation.lastMessageTimestamp ;
 			//Send history to conversation process
 			if (event != undefined && event != null) {
 				event.sender.send('receive_history', history);
@@ -456,6 +459,8 @@ app.on('before-quit', () => {
 	globalShortcut.unregisterAll();
 });
 
+function runApi(api){}
+
 function runLogin(useAppState) {
 
 	if (DEBUG_LOCAL_MODE) {
@@ -471,6 +476,7 @@ function runLogin(useAppState) {
 						runLogin(false);
 					} else {
 						facebook = api;
+						runApi(api);
 						loginSuccess(api);
 					}
 				});

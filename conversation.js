@@ -5,7 +5,7 @@ const remote = electron.remote;
 var ipc = electron.ipcRenderer;
 
 window.onerror = function (error, url, line) {
-    mainLog("Error at line " + line + ": " + error);
+    log("Error at line " + line + ": " + error);
 };
 
 const $ = require('jquery');
@@ -115,7 +115,7 @@ ipc.on('receive_history', (event, history) => {
 
     appendMessages(messagesToAppend);
 
-    if (!checkScrollLocked()) scrollToBottom();
+    if (checkScrollLocked()) scrollToBottom();
 
     loadMessageSync = true;
 
@@ -123,7 +123,7 @@ ipc.on('receive_history', (event, history) => {
 });
 
 function checkScrollLocked() {
-    return $('#conversation_messages-div').scrollTop() >= $('#conversation_messages-div')[0].scrollHeight - $('conversation_messages-div').height() - 2;
+    return $('#conversation_messages-div').scrollTop() >= $('#conversation_messages-div')[0].scrollHeight - $('#conversation_messages-div').height();
 }
 
 function scrollToBottom() {
@@ -135,6 +135,6 @@ function scrollToBottom() {
     );
 }
 
-function mainLog(log) {
+function log(log) {
     ipc.send('console.log', log);
 }
