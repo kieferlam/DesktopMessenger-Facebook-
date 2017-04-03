@@ -328,11 +328,19 @@ ipc.on('openThread', (event, threadID) => {
 
 });
 
+ipc.on('conversation_send_message_async', (event, threadID, body, msgID) => {
+	fb((api) => {
+		api.sendMessage(body, threadID, (err, msgInfo) => {
+			event.sender.send('conversation_message_sent_async', err, {info: msgInfo, id: msgID});
+		});
+	});
+});
+
 ipc.on('conversation_request_messages_async', (event, threadID) => {
 	conversations.forEach((conv, index) => {
 		if (conv.threadID == threadID) {
 			fb((api) => {
-				console.log('Performing API getThreadHistory ASYNC on ' + conv.id + ' timestamp[' +conv.lastMessageTimestamp+ ']');
+				console.log('Performing API getThreadHistory ASYNC on ' + conv.id + ' timestamp[' + conv.lastMessageTimestamp + ']');
 				api.getThreadHistory(threadID, 0, CONVERSATION_LOAD_AMOUNT, conv.lastMessageTimestamp, (err, history) => {
 					if (err) return console.log(err);
 					console.log(conv.id + ' history loaded.');
@@ -343,7 +351,7 @@ ipc.on('conversation_request_messages_async', (event, threadID) => {
 						conv.history.push(msg);
 					});
 					//Set last message time 
-					conv.lastMessageTimestamp = history.length > 0 ? history[0].timestamp : conv.lastMessageTimestamp ;
+					conv.lastMessageTimestamp = history.length > 0 ? history[0].timestamp : conv.lastMessageTimestamp;
 					//Send history to conversation process
 					conv.window.webContents.send('receive_history', history);
 				});
@@ -354,7 +362,7 @@ ipc.on('conversation_request_messages_async', (event, threadID) => {
 
 function loadMessagesSync(event, conversation) {
 	fb((api) => {
-		console.log('Performing API getThreadHistory ASYNC on ' + conversation.id + ' timestamp[' +conversation.lastMessageTimestamp+ ']');
+		console.log('Performing API getThreadHistory ASYNC on ' + conversation.id + ' timestamp[' + conversation.lastMessageTimestamp + ']');
 		api.getThreadHistory(conversation.threadID, 0, CONVERSATION_LOAD_AMOUNT, conversation.lastMessageTimestamp, (err, history) => {
 			if (err) return console.log(err);
 			console.log(conversation.id + ' history loaded.');
@@ -362,7 +370,7 @@ function loadMessagesSync(event, conversation) {
 			history.forEach((msg, index) => {
 				conversation.history.push(msg);
 			});
-			conversation.lastMessageTimestamp = history.length > 0 ? history[0].timestamp : conversation.lastMessageTimestamp ;
+			conversation.lastMessageTimestamp = history.length > 0 ? history[0].timestamp : conversation.lastMessageTimestamp;
 			//Send history to conversation process
 			if (event != undefined && event != null) {
 				event.sender.send('receive_history', history);
@@ -459,7 +467,20 @@ app.on('before-quit', () => {
 	globalShortcut.unregisterAll();
 });
 
-function runApi(api){}
+function runApi(api) {
+
+	// api.listen((err, message)=>{
+	// 	if(message.type == 'message'){
+	// 		console.log('New message');
+	// 		console.log('Thread ID: ' + message.threadID);
+	// 		console.log('Body: ' + message.body);
+	// 		api.markAsRead(message.threadID, function (err) {
+	// 			if(err) return console.log(err);
+	// 			console.log('Marked as read');
+	// 		});
+	// 	}
+	// });
+}
 
 function runLogin(useAppState) {
 

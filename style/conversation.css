@@ -136,3 +136,7 @@ body{
     overflow: hidden;
     border-radius: 100%;
 }
+
+.unsent{
+    opacity: 0.5;
+}

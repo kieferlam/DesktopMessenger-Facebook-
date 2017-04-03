@@ -29,7 +29,40 @@ function setup() {
             ipc.send('conversation_request_messages_async', thread.threadID);
         }
     });
+
+    //Send IPC: conversation_send_message_async
+    $('#conversation_send_message-textarea').keydown((event) => {
+        if (event.keyCode == 13 && !event.shiftKey) {
+            sendUserTypedMessage($('#conversation_send_message-textarea').val());
+        }
+    });
+    $('#conversation_send_message-textarea').keyup((event) => {
+        if (event.keyCode == 13 && !event.shiftKey) {
+            $('#conversation_send_message-textarea').val('');
+        }
+    });
+    $('#conversation_send-button').click((event) => {
+        sendUserTypedMessage($('#conversation_send_message-textarea').val());
+        $('#conversation_send_message-textarea').val('');
+    });
 }
+
+function sendUserTypedMessage(msg) {
+    var shouldScroll = checkScrollLocked();
+    var localMessageID = 'LOCAL_MID-' + Math.floor(Math.random() * 10000) + '-' + Date.now();
+    log('Message send request: {threadID: ' + thread.threadID + ', body: ' + msg + '}');
+    $('#conversation_messages-div').append(getUserMessageHTML(msg, Date.now(), localMessageID));
+    $('#' + localMessageID).addClass('unsent');
+    if(shouldScroll) scrollToBottom();
+    ipc.send('conversation_send_message_async', thread.threadID, msg, localMessageID);
+}
+
+ipc.on('conversation_message_sent_async', (event, err, data) => {
+    if (err) log(err);
+    var message_info = data.info;
+    var localMessageID = data.id;
+    $('#' + localMessageID).removeClass('unsent');
+});
 
 ipc.on('receive_thread', (event, data) => {
     thread = data.thread;
@@ -60,9 +93,10 @@ function getUserImg(userInfo) {
     return userInfo.thumbSrc;
 }
 
-function getUserMessageHTML(userInfo, messageBody, time) {
+function getUserMessageHTML(messageBody, time, lmid) {
     var timestamp = 'You ' + makeTimestamp('', time);
-    var html = '<div class="conversation_message-div"><div class="conversation_message_timestamp-div conversation_message_timestamp_user-div"><label>' + timestamp + '</label></div><div class="conversation_message_sender_img_user-div"><img src="' + userInfo.thumbSrc + '" class="conversation_message_sender-img" alt="Sender Image" /> </div> <div class="conversation_message_content_user-div"><p>' + messageBody + '</p></div></div>';
+    var userInfo = getOwnUserInfo();
+    var html = '<div ' + (lmid != undefined ? ('id="' + lmid + '"') : '') + ' class="conversation_message-div"><div class="conversation_message_timestamp-div conversation_message_timestamp_user-div"><label>' + timestamp + '</label></div><div class="conversation_message_sender_img_user-div"><img src="' + userInfo.thumbSrc + '" class="conversation_message_sender-img" alt="Sender Image" /> </div> <div class="conversation_message_content_user-div"><p>' + messageBody + '</p></div></div>';
     return html;
 }
 
@@ -76,7 +110,7 @@ function appendMessage(msg) {
     var userInfo = participantInfos[msg.senderID];
     var html = '';
     if (msg.senderID == userID) {
-        html = getUserMessageHTML(userInfo, msg.body, msg.timestamp);
+        html = getUserMessageHTML(msg.body, msg.timestamp);
     } else {
         html = getMessageHTML(userInfo, msg.body, msg.timestamp);
     }
@@ -89,7 +123,7 @@ function makeMessagesHTML(msgs) {
     msgs.forEach((msg, index) => {
         var userInfo = participantInfos[msg.senderID];
         if (msg.senderID == userID) {
-            buffer += getUserMessageHTML(userInfo, msg.body, msg.timestamp);
+            buffer += getUserMessageHTML(msg.body, msg.timestamp);
         } else {
             buffer += getMessageHTML(userInfo, msg.body, msg.timestamp);
         }
@@ -106,7 +140,7 @@ ipc.on('receive_history', (event, history) => {
 
     var shouldScroll = checkScrollLocked();
     //Store the difference in scroll from bottom
-    var scrollFromBottom =  getBottomScroll() - $('#conversation_messages-div').scrollTop();
+    var scrollFromBottom = getBottomScroll() - $('#conversation_messages-div').scrollTop();
 
     messagesToAppend = [];
 
@@ -122,8 +156,8 @@ ipc.on('receive_history', (event, history) => {
     //Should scroll to the bottom, not scroll at all
     if (shouldScroll) {
         scrollToBottom();
-    }else{
-        setScroll(getBottomScroll() - scrollFromBottom);        
+    } else {
+        setScroll(getBottomScroll() - scrollFromBottom);
     }
 
     loadMessageSync = true;
@@ -135,7 +169,7 @@ function checkScrollLocked() {
     return $('#conversation_messages-div').scrollTop() >= $('#conversation_messages-div')[0].scrollHeight - $('#conversation_messages-div').height();
 }
 
-function setScroll(scroll){
+function setScroll(scroll) {
     $('#conversation_messages-div').scrollTop(scroll);
 }
 
@@ -145,12 +179,16 @@ function scrollTo(scroll) {
     }, 150, "easeOutQuint");
 }
 
-function getBottomScroll(){
+function getBottomScroll() {
     return $('#conversation_messages-div')[0].scrollHeight - $('#conversation_messages-div').height();
 }
 
 function scrollToBottom() {
     scrollTo(getBottomScroll());
+}
+
+function getOwnUserInfo(){
+    return participantInfos[userID];
 }
 
 function log(log) {
