@@ -1,0 +1,8 @@
+.vscode
+
+*.bat
+
+prefs.json
+
+appstate.json
+updater
