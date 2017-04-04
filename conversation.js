@@ -167,7 +167,8 @@ ipc.on('receive_history', (event, history) => {
 
 ipc.on('receive_message', (event, msg)=>{
     var shouldScroll = checkScrollLocked();
-    $('#conversation_messages-div').append(makeMessagesHTML(msg));
+    msg.timestamp = Date.now();
+    $('#conversation_messages-div').append(makeMessagesHTML([msg]));
     if (shouldScroll) {
         scrollToBottom();
     } else {

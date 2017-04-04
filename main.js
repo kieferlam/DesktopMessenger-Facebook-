@@ -269,7 +269,8 @@ ipc.on('openThread', (event, threadID) => {
 		show: false,
 		width: 360,
 		height: 480,
-		autoHideMenuBar: true
+		autoHideMenuBar: true,
+		icon: './img/ico24.png'
 	});
 
 	//Defining conversation history
@@ -469,7 +470,17 @@ app.on('before-quit', () => {
 });
 
 function runApi(api) {
-	
+
+	// api.listen((err, message) => {
+	// 	if (message.type == 'message') {
+	// 		console.log('New message + ' + message.messageID);
+	// 		api.markAsRead(message.threadID, (err) => {
+	// 			if (err) return console.log(err);
+	// 			console.log('Marked as read ' + message.messageID);
+	// 		});
+	// 	}
+	// });
+
 }
 
 function runLogin(useAppState) {
