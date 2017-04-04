@@ -165,6 +165,16 @@ ipc.on('receive_history', (event, history) => {
     event.sender.send('conversation_show');
 });
 
+ipc.on('receive_message', (event, msg)=>{
+    var shouldScroll = checkScrollLocked();
+    $('#conversation_messages-div').append(makeMessagesHTML(msg));
+    if (shouldScroll) {
+        scrollToBottom();
+    } else {
+        setScroll(getBottomScroll() - scrollFromBottom);
+    }
+});
+
 function checkScrollLocked() {
     return $('#conversation_messages-div').scrollTop() >= $('#conversation_messages-div')[0].scrollHeight - $('#conversation_messages-div').height();
 }

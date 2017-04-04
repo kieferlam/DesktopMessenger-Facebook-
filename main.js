@@ -331,7 +331,7 @@ ipc.on('openThread', (event, threadID) => {
 ipc.on('conversation_send_message_async', (event, threadID, body, msgID) => {
 	fb((api) => {
 		api.sendMessage(body, threadID, (err, msgInfo) => {
-			event.sender.send('conversation_message_sent_async', err, {info: msgInfo, id: msgID});
+			event.sender.send('conversation_message_sent_async', err, { info: msgInfo, id: msgID });
 		});
 	});
 });
@@ -341,7 +341,7 @@ ipc.on('conversation_request_messages_async', (event, threadID) => {
 		if (conv.threadID == threadID) {
 			fb((api) => {
 				console.log('Performing API getThreadHistory ASYNC on ' + conv.id + ' timestamp[' + conv.lastMessageTimestamp + ']');
-				api.getThreadHistory(threadID, 0, CONVERSATION_LOAD_AMOUNT, conv.lastMessageTimestamp, (err, history) => {
+				api.getThreadHistory(threadID, CONVERSATION_LOAD_AMOUNT, conv.lastMessageTimestamp, (err, history) => {
 					if (err) return console.log(err);
 					console.log(conv.id + ' history loaded.');
 					//Discard latest message as it's a duplicate
@@ -363,9 +363,10 @@ ipc.on('conversation_request_messages_async', (event, threadID) => {
 function loadMessagesSync(event, conversation) {
 	fb((api) => {
 		console.log('Performing API getThreadHistory ASYNC on ' + conversation.id + ' timestamp[' + conversation.lastMessageTimestamp + ']');
-		api.getThreadHistory(conversation.threadID, 0, CONVERSATION_LOAD_AMOUNT, conversation.lastMessageTimestamp, (err, history) => {
+		api.getThreadHistory(conversation.threadID, CONVERSATION_LOAD_AMOUNT, conversation.lastMessageTimestamp, (err, history) => {
 			if (err) return console.log(err);
 			console.log(conversation.id + ' history loaded.');
+			console.log(history.length);
 			//Append history to conversation
 			history.forEach((msg, index) => {
 				conversation.history.push(msg);
@@ -468,18 +469,7 @@ app.on('before-quit', () => {
 });
 
 function runApi(api) {
-
-	// api.listen((err, message)=>{
-	// 	if(message.type == 'message'){
-	// 		console.log('New message');
-	// 		console.log('Thread ID: ' + message.threadID);
-	// 		console.log('Body: ' + message.body);
-	// 		api.markAsRead(message.threadID, function (err) {
-	// 			if(err) return console.log(err);
-	// 			console.log('Marked as read');
-	// 		});
-	// 	}
-	// });
+	
 }
 
 function runLogin(useAppState) {
@@ -659,132 +649,142 @@ function calculateWinHeights(curr = 999) {
 function handleMessage(api, message) {
 	console.log("New message from " + message.senderID + ": " + message.body);
 
-	var existingMessages = displayingMessages.filter((msg) => msg.message.threadID == message.threadID);
-	if (existingMessages.length > 0) {
-		console.log('Appending message to existing window.');
-		//Message already exists
-		var existingWin = existingMessages[0];
-		if (!existingWin.window.interacted) existingWin.window.restartCloseTimer();
-		if (!DEBUG_LOCAL_MODE) api.getUserInfo(message.senderID, function (err, ret) {
-			if (err) return console.error(err);
-			var userInfo = { userID: message.senderID, message_data: message, data: ret[message.senderID] };
-			existingWin.window.webContents.send('anotherMessage', userInfo);
-		});
-		else
-			existingWin.window.webContents.send('anotherMessage', { userID: message.senderID, message_data: message });
-	} else {
-		console.log('New message window.');
-		//Display new message
-		var newWin = new BrowserWindow({
-			width: message_win_width,
-			height: 128,
-			frame: false,
-			transparent: true,
-			resizable: false,
-			show: false,
-			icon: './img/ico24.png',
-			alwaysOnTop: true,
-			skipTaskbar: true
-		});
-		newWin.isDisplaying = false;
-		var msgWinObj = { window: newWin, message: message, api: api };
-		newWin.setPosition(workAreaSize.width, workAreaSize.height - newWin.getPosition()[1] - calculateWinHeights());
-		displayingMessages.push(msgWinObj);
-		newWin.interacted = false;
-		var autoCloseRunning = false;
-		// newWin.webContents.openDevTools();
+	var conversationExists = false;
+	conversations.filter((conv) => conv.threadID == message.threadID).forEach((conv, index) => {
+		conv.window.webContents.send('receive_message', message);
+		conversationExists = true;
+	});
 
-		newWin.loadURL(url.format({
-			pathname: path.join(__dirname, 'incomingmessage.html'),
-			protocol: 'file',
-			slashes: true
-		}));
 
-		const animateCloseFunction = function () {
-			if (autoCloseRunning) return;
-			autoCloseRunning = true;
-			const closeAnim = animate(
-				0,
-				message_win_width,
-				300,
-				(val) => newWin.setPosition(Math.round(workAreaSize.width - (message_win_width - val)), newWin.getPosition()[1]),
-				(x, dur) => {
-					return Math.pow((0.003 * (1000 / dur) * x) + 1, -3);
-				},
-				() => newWin.close()
-			);
-		}
+	if (!conversationExists) {
 
-		newWin.restartCloseTimer = function () {
-			clearTimeout(newWin.autoCloseTimeout);
-			if (global.settings.message_display_period > 0) {
-				newWin.autoCloseTimeout = setTimeout(animateCloseFunction, global.settings.message_display_period);
-			}
-		}
-
-		newWin.forceAutoClose = function () {
-			if (!autoCloseRunning) {
-				clearTimeout(newWin.autoCloseTimeout);
-				animateCloseFunction();
-			}
-		}
-
-		ipc.once('messageInteracted', () => {
-			newWin.interacted = true;
-			clearTimeout(newWin.autoCloseTimeout);
-		});
-
-		ipc.once('messageDomReady', (event, arg) => {
-			console.log('Message DOM ready.');
+		var existingMessages = displayingMessages.filter((msg) => msg.message.threadID == message.threadID);
+		if (existingMessages.length > 0) {
+			console.log('Appending message to existing window.');
+			//Message already exists
+			var existingWin = existingMessages[0];
+			if (!existingWin.window.interacted) existingWin.window.restartCloseTimer();
 			if (!DEBUG_LOCAL_MODE) api.getUserInfo(message.senderID, function (err, ret) {
 				if (err) return console.error(err);
-				var userInfo = { userID: message.senderID, message: message, data: ret[message.senderID] };
-				api.getThreadInfo(message.threadID, (err, threadData) => {
-					if (err) return console.error(err);
-					loadRelevantUserInfo(api, [threadData], (newUserInfo) => {
-						event.sender.send('initMessageDetails', threadData, userInfo, preloadedUserInfo);
-					});
-				});
+				var userInfo = { userID: message.senderID, message_data: message, data: ret[message.senderID] };
+				existingWin.window.webContents.send('anotherMessage', userInfo);
 			});
 			else
-				event.sender.send('initMessageDetails', {}, { message: message });
-		});
+				existingWin.window.webContents.send('anotherMessage', { userID: message.senderID, message_data: message });
+		} else {
+			console.log('New message window.');
+			//Display new message
+			var newWin = new BrowserWindow({
+				width: message_win_width,
+				height: 128,
+				frame: false,
+				transparent: true,
+				resizable: false,
+				show: false,
+				icon: './img/ico24.png',
+				alwaysOnTop: true,
+				skipTaskbar: true
+			});
+			newWin.isDisplaying = false;
+			var msgWinObj = { window: newWin, message: message, api: api };
+			newWin.setPosition(workAreaSize.width, workAreaSize.height - newWin.getPosition()[1] - calculateWinHeights());
+			displayingMessages.push(msgWinObj);
+			newWin.interacted = false;
+			var autoCloseRunning = false;
+			// newWin.webContents.openDevTools();
 
-		ipc.once('readyToDisplay', (event, height) => {
-			try {
-				console.log('Message window ready to display with height of ' + height);
-				if (height > quickMessageMaxHeight) height = quickMessageMaxHeight;
-				newWin.setSize(newWin.getSize()[0], height);
-				newWin.setPosition(workAreaSize.width, workAreaSize.height - height - calculateWinHeights(displayingMessages.indexOf(msgWinObj)));
-				newWin.show();
-				newWin.isDisplaying = true;
-				if (newWin.slideInAnim != 0 && !isLinux) {
-					newWin.slideInAnim = animate(
-						0,
-						message_win_width,
-						300,
-						(val) => newWin.setPosition(Math.round(workAreaSize.width - val), newWin.getPosition()[1]),
-						(x, dur) => {
-							return Math.pow((0.003 * (1000 / dur) * x) + 1, -3);
-						},
-						() => {
-							newWin.slideInAnim = 0;
-							newWin.restartCloseTimer();
-						}
-					);
-				}
-			} catch (e) {
-				console.error(e);
+			newWin.loadURL(url.format({
+				pathname: path.join(__dirname, 'incomingmessage.html'),
+				protocol: 'file',
+				slashes: true
+			}));
+
+			const animateCloseFunction = function () {
+				if (autoCloseRunning) return;
+				autoCloseRunning = true;
+				const closeAnim = animate(
+					0,
+					message_win_width,
+					300,
+					(val) => newWin.setPosition(Math.round(workAreaSize.width - (message_win_width - val)), newWin.getPosition()[1]),
+					(x, dur) => {
+						return Math.pow((0.003 * (1000 / dur) * x) + 1, -3);
+					},
+					() => newWin.close()
+				);
 			}
-		});
 
-		newWin.once('close', () => {
-			autoCloseRunning = false;
-			console.log('Message window (' + displayingMessages.indexOf(msgWinObj) + ') closed.');
-			displayingMessages.splice(displayingMessages.indexOf(msgWinObj), 1);
-		});
+			newWin.restartCloseTimer = function () {
+				clearTimeout(newWin.autoCloseTimeout);
+				if (global.settings.message_display_period > 0) {
+					newWin.autoCloseTimeout = setTimeout(animateCloseFunction, global.settings.message_display_period);
+				}
+			}
 
-		console.log('Finished setting up.');
+			newWin.forceAutoClose = function () {
+				if (!autoCloseRunning) {
+					clearTimeout(newWin.autoCloseTimeout);
+					animateCloseFunction();
+				}
+			}
+
+			ipc.once('messageInteracted', () => {
+				newWin.interacted = true;
+				clearTimeout(newWin.autoCloseTimeout);
+			});
+
+			ipc.once('messageDomReady', (event, arg) => {
+				console.log('Message DOM ready.');
+				if (!DEBUG_LOCAL_MODE) api.getUserInfo(message.senderID, function (err, ret) {
+					if (err) return console.error(err);
+					var userInfo = { userID: message.senderID, message: message, data: ret[message.senderID] };
+					api.getThreadInfo(message.threadID, (err, threadData) => {
+						if (err) return console.error(err);
+						loadRelevantUserInfo(api, [threadData], (newUserInfo) => {
+							event.sender.send('initMessageDetails', threadData, userInfo, preloadedUserInfo);
+						});
+					});
+				});
+				else
+					event.sender.send('initMessageDetails', {}, { message: message });
+			});
+
+			ipc.once('readyToDisplay', (event, height) => {
+				try {
+					console.log('Message window ready to display with height of ' + height);
+					if (height > quickMessageMaxHeight) height = quickMessageMaxHeight;
+					newWin.setSize(newWin.getSize()[0], height);
+					newWin.setPosition(workAreaSize.width, workAreaSize.height - height - calculateWinHeights(displayingMessages.indexOf(msgWinObj)));
+					newWin.show();
+					newWin.isDisplaying = true;
+					if (newWin.slideInAnim != 0 && !isLinux) {
+						newWin.slideInAnim = animate(
+							0,
+							message_win_width,
+							300,
+							(val) => newWin.setPosition(Math.round(workAreaSize.width - val), newWin.getPosition()[1]),
+							(x, dur) => {
+								return Math.pow((0.003 * (1000 / dur) * x) + 1, -3);
+							},
+							() => {
+								newWin.slideInAnim = 0;
+								newWin.restartCloseTimer();
+							}
+						);
+					}
+				} catch (e) {
+					console.error(e);
+				}
+			});
+
+			newWin.once('close', () => {
+				autoCloseRunning = false;
+				console.log('Message window (' + displayingMessages.indexOf(msgWinObj) + ') closed.');
+				displayingMessages.splice(displayingMessages.indexOf(msgWinObj), 1);
+			});
+
+			console.log('Finished setting up.');
+		}
 	}
 }
 
