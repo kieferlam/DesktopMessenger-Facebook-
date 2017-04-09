@@ -165,6 +165,10 @@ header{
     padding-left: 20px;
 }
 
+.message-image{
+    display: block;
+}
+
 #reply-div{
     height: 24px;
     margin-top: 8px;
@@ -214,4 +218,11 @@ header{
 
 .clear-br{
     clear:both;
+}
+
+
+.clearfix:after {
+  content: "";
+  display: table;
+  clear: both;
 }

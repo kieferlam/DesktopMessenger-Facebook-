@@ -7,7 +7,7 @@ const DEBUG_LOCAL_MODE = remote.getGlobal('DEBUG_LOCAL_MODE');
 var ipc = electron.ipcRenderer;
 
 window.onerror = function (error, url, line) {
-    mainLog("Error at line " + line + ": " + error);
+    log("Error at line " + line + ": " + error);
 };
 
 const $ = require('jquery');
@@ -37,7 +37,7 @@ $(document).click(() => {
 });
 
 ipc.once('initMessageDetails', (event, threadinfo, messageInfo, preloadedUserInfo) => {
-    mainLog('Initial message update.');
+    log('Initial message update.');
     threadId = messageInfo.message.threadID;
     userInfo = preloadedUserInfo;
     completeData = { threadInfo: threadinfo, userInfo: messageInfo, message: messageInfo.message };
@@ -61,9 +61,9 @@ ipc.once('initMessageDetails', (event, threadinfo, messageInfo, preloadedUserInf
 });
 
 ipc.on('anotherMessage', (event, userInfo) => {
-    mainLog('Appending message.');
+    log('Appending message.');
     appendMessage(userInfo.message_data);
-    event.sender.send('resizeHeight', $('body')[0].scrollHeight);
+    resize();
 });
 
 function appendMessage(message) {
@@ -88,7 +88,7 @@ function appendMessage(message) {
 
     //Scroll
     if (doScroll) {
-        mainLog('Scrolling to bottom.');
+        log('Scrolling to bottom.');
         $('html, body').animate({
             scrollTop: $(document).height() - $(window).height()
         },
@@ -103,7 +103,31 @@ function sender_img_html(message) {
 }
 
 function message_html(message) {
-    return '<p class="message-body">' + message.body + '</p>';
+    var content = '';
+    if (message.body == undefined) {
+        message.attachments.forEach((attachment, index) => {
+            switch (attachment.type) {
+                case 'photo':
+                case 'animated_image':
+                    content += '<img class="message-image clearfix" width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '" src="' + attachment.thumbnailUrl + '" />';
+                    break;
+                case 'sticker':
+                    content += '<img class="message-image clearfix" width="' + attachment.width + '" height="' + attachment.height + '" src="' + attachment.url + '" />';;
+                    break;
+                case 'video':
+                    content += '<video width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '">';
+                    content += '<source src="' + attachment.url + '" type="video/mp4">';
+                    content += '</video>'
+                    break;
+                default:
+                    content += '[' + attachment.type + ']';
+                    break;
+            }
+        });
+    } else {
+        content = message.body;
+    }
+    return '<p class="message-body clearfix">' + content + '</p>';
 }
 
 function sender_name() {
@@ -142,6 +166,14 @@ function appendUserMessage(messageId, replyMsg, timestampId) {
     }
     $('#messages_container').append(msgHtml);
     $('#content-div').height($('body')[0].scrollHeight);
+
+    log('Scrolling to bottom.');
+    $('html, body').animate({
+        scrollTop: $(document).height() - $(window).height()
+    },
+        250,
+        "easeOutQuint"
+    );
 }
 
 function sendMsg(replyMsg) {
@@ -156,7 +188,7 @@ function sendMsg(replyMsg) {
             $('#' + timestampId).val(msgInfo.timestamp);
             if (err) {
                 $('#' + messageId).addClass('sendError');
-                mainLog(err.error);
+                log(err.error);
             }
         });
     }
@@ -203,6 +235,6 @@ function resize() {
     ipc.send('resizeHeight', $('body')[0].scrollHeight);
 }
 
-function mainLog(log) {
+function log(log) {
     ipc.send('console.log', log);
 }
