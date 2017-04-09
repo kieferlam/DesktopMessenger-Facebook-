@@ -7,3 +7,5 @@ prefs.json
 appstate.json
 
 updater
+
+node_modules
