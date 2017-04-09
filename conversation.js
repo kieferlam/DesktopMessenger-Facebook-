@@ -53,7 +53,7 @@ function sendUserTypedMessage(msg) {
     log('Message send request: {threadID: ' + thread.threadID + ', body: ' + msg + '}');
     $('#conversation_messages-div').append(getUserMessageHTML(msg, Date.now(), localMessageID));
     $('#' + localMessageID).addClass('unsent');
-    if(shouldScroll) scrollToBottom();
+    if (shouldScroll) scrollToBottom();
     ipc.send('conversation_send_message_async', thread.threadID, msg, localMessageID);
 }
 
@@ -100,9 +100,39 @@ function getUserMessageHTML(messageBody, time, lmid) {
     return html;
 }
 
-function getMessageHTML(userInfo, messageBody, time) {
-    var timestamp = makeTimestamp(userInfo.name, time);
-    var html = '<div class="conversation_message-div"> <div class="conversation_message_timestamp-div"> <label>' + timestamp + '</label></div><div class="conversation_message_sender_img-div"><img src="' + getUserImg(userInfo) + '" class="conversation_message_sender-img" alt="Sender Image" /></div><div class="conversation_message_content-div"><p>' + messageBody + '</p></div></div>';
+function buildMessageContent(msg) {
+    if (msg.body == undefined || msg.body.length == 0) {
+        var content = '';
+        msg.attachments.forEach((attachment, index) => {
+            log(attachment)
+            switch (attachment.type) {
+                case 'photo':
+                case 'animated_image':
+                    content += '<img class="message-image clearfix" width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '" src="' + attachment.largePreviewUrl + '" />';
+                    break;
+                case 'sticker':
+                    content += '<img class="message-image clearfix" width="' + attachment.width + '" height="' + attachment.height + '" src="' + attachment.url + '" />';;
+                    break;
+                case 'video':
+                    content += '<video width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '">';
+                    content += '<source src="' + attachment.url + '" type="video/mp4">';
+                    content += '</video>'
+                    break;
+                default:
+                    content += '[' + attachment.type + ']';
+                    break;
+            }
+        });
+        return content;
+    } else {
+        return msg.body;
+    }
+}
+
+function getMessageHTML(userInfo, msg) {
+    var timestamp = makeTimestamp(userInfo.name, msg.timestamp);
+    var content = buildMessageContent(msg);
+    var html = '<div class="conversation_message-div"> <div class="conversation_message_timestamp-div"> <label>' + timestamp + '</label></div><div class="conversation_message_sender_img-div"><img src="' + getUserImg(userInfo) + '" class="conversation_message_sender-img" alt="Sender Image" /></div><div class="conversation_message_content-div"><p>' + content + '</p></div></div>';
     return html;
 }
 
@@ -112,7 +142,7 @@ function appendMessage(msg) {
     if (msg.senderID == userID) {
         html = getUserMessageHTML(msg.body, msg.timestamp);
     } else {
-        html = getMessageHTML(userInfo, msg.body, msg.timestamp);
+        html = getMessageHTML(userInfo, msg);
     }
 
     $('#conversation_messages-div').append(html);
@@ -125,7 +155,7 @@ function makeMessagesHTML(msgs) {
         if (msg.senderID == userID) {
             buffer += getUserMessageHTML(msg.body, msg.timestamp);
         } else {
-            buffer += getMessageHTML(userInfo, msg.body, msg.timestamp);
+            buffer += getMessageHTML(userInfo, msg);
         }
     });
     return buffer;
@@ -165,7 +195,7 @@ ipc.on('receive_history', (event, history) => {
     event.sender.send('conversation_show');
 });
 
-ipc.on('receive_message', (event, msg)=>{
+ipc.on('receive_message', (event, msg) => {
     var shouldScroll = checkScrollLocked();
     msg.timestamp = Date.now();
     $('#conversation_messages-div').append(makeMessagesHTML([msg]));
@@ -198,7 +228,7 @@ function scrollToBottom() {
     scrollTo(getBottomScroll());
 }
 
-function getOwnUserInfo(){
+function getOwnUserInfo() {
     return participantInfos[userID];
 }
 

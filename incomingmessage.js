@@ -109,7 +109,7 @@ function message_html(message) {
             switch (attachment.type) {
                 case 'photo':
                 case 'animated_image':
-                    content += '<img class="message-image clearfix" width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '" src="' + attachment.thumbnailUrl + '" />';
+                    content += '<img class="message-image clearfix" width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '" src="' + attachment.largePreviewUrl + '" />';
                     break;
                 case 'sticker':
                     content += '<img class="message-image clearfix" width="' + attachment.width + '" height="' + attachment.height + '" src="' + attachment.url + '" />';;
