@@ -137,6 +137,13 @@ body{
     border-radius: 100%;
 }
 
+.message-image{
+    display: block;
+    max-width: 100%;
+    width: auto;
+    height: auto;
+}
+
 .unsent{
     opacity: 0.5;
 }

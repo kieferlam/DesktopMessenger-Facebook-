@@ -108,8 +108,10 @@ function message_html(message) {
         message.attachments.forEach((attachment, index) => {
             switch (attachment.type) {
                 case 'photo':
+                    content += '<img class="message-image clearfix" width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '" src="' + attachment.hiresUrl + '" />';
+                    break;
                 case 'animated_image':
-                    content += '<img class="message-image clearfix" width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '" src="' + attachment.largePreviewUrl + '" />';
+                    content += '<img class="message-image clearfix" width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '" src="' + attachment.previewUrl + '" />';
                     break;
                 case 'sticker':
                     content += '<img class="message-image clearfix" width="' + attachment.width + '" height="' + attachment.height + '" src="' + attachment.url + '" />';;

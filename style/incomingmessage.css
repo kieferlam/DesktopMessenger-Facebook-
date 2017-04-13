@@ -161,12 +161,15 @@ header{
 .message-body{
     display: block;
     width: 80%;
+    word-wrap: break-word;
     text-align: left;
     padding-left: 20px;
 }
 
 .message-image{
     display: block;
+    max-width: 80vw;
+    max-height: auto;
 }
 
 #reply-div{
