@@ -108,6 +108,27 @@ body{
     width: 100%;
 }
 
+/*FRIENDS TAB STYLING GOES HERE*/
+
+#search-div{
+    width: 100%;
+}
+
+#search-textfield{
+    width: 85%;
+    margin: 4px;
+    margin-top: 6px;
+    padding: 2px;
+    font-size: 14pt;
+    border-radius: 14pt;
+    background: url('../img/ico_search.png');
+    background-size: 28px 28px;
+    background-position-x: calc(100%);
+    background-repeat: no-repeat;
+}
+
+/*MESSAGES/THREAD STYLING GOES HERE*/
+
 .list-item-icon-image{
     min-width: 8.88vh;
     width: 17.7vw;
