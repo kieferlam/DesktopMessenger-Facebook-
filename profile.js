@@ -15,7 +15,7 @@ $(document).ready(() => {
 });
 
 function friendsHTML(friend){
-    return '';
+    return `<div class="friend-div"><img class="friend_profile-img" src="${friend.profilePicture}" /><h1>${friend.fullName}</h1><div class="friend_options-div"><img src="./img/ico_more_vert.png" class="friend_options-img" /></div></div>`;
 }
 
 function appendFriendsData(facebookData){

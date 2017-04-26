@@ -128,28 +128,36 @@ body{
 }
 
 .friend-div{
+    display:block;
     width: 100%;
     height: auto;
+    overflow: hidden;
 }
 
 .friend_profile-img{
-    min-width: 32px;
-    min-height: 32px;
+    min-width: 64px;
+    min-height: 64px;
 
-    width: 25%;
+    width: 20%;
+    max-width: 96pt;
     height: auto;
 
     border-radius: 100%;
+    float: left;
 }
 
 .friend-div h1{
-    font-size: 32pt;
+    font-size: 24pt;
     font-weight: 100;
+    padding-top: 8pt;
+    float: left;
+    width: 70%;
 }
 
 .friend_options-div{
-    width: 15%;
+    width: auto;
     height: 100%;
+    float: left;
 }
 
 .friend_options-img{
