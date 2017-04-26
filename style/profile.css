@@ -115,7 +115,7 @@ body{
 }
 
 #search-textfield{
-    width: 85%;
+    width: calc(100% - 24px);
     margin: 4px;
     margin-top: 6px;
     padding: 2px;
@@ -125,6 +125,36 @@ body{
     background-size: 28px 28px;
     background-position-x: calc(100%);
     background-repeat: no-repeat;
+}
+
+.friend-div{
+    width: 100%;
+    height: auto;
+}
+
+.friend_profile-img{
+    min-width: 32px;
+    min-height: 32px;
+
+    width: 25%;
+    height: auto;
+
+    border-radius: 100%;
+}
+
+.friend-div h1{
+    font-size: 32pt;
+    font-weight: 100;
+}
+
+.friend_options-div{
+    width: 15%;
+    height: 100%;
+}
+
+.friend_options-img{
+    width: 16px;
+    height: 16px;
 }
 
 /*MESSAGES/THREAD STYLING GOES HERE*/

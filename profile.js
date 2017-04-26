@@ -14,6 +14,16 @@ $(document).ready(() => {
     ipc.send('profileDomLoaded');
 });
 
+function friendsHTML(friend){
+    return '';
+}
+
+function appendFriendsData(facebookData){
+    facebookData.friendsList.forEach((friend, index)=>{
+        $('#friends_content-div').append(friendsHTML(friend));
+    });
+}
+
 function messagesListItemHTML(data, userInfo) {
     var threadImageSrc = data.imageSrc;
     var threadTitle = data.name;
@@ -67,9 +77,10 @@ ipc.on('requestDisplayTab', (event, tab) => {
     setDisplayTab(tab);
 });
 
-ipc.once('loadFacebookData', (event, threadData, tab) => {
+ipc.once('loadFacebookData', (event, facebookData, tab) => {
     log('Facebook data sent to profile window.');
-    appendThreadData(threadData);
+    appendThreadData(facebookData);
+    appendFriendsData(facebookData);
 
     setDisplayTab(tab);
 
