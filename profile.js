@@ -35,6 +35,11 @@ function appendThreadData(data) {
         }
         $('#messages-tab-div').append(messagesListItemHTML(elem, userInfo));
     });
+
+    $('.messages-list-item').dblclick((clickEvent) => {
+        var threadID = $(clickEvent.delegateTarget).attr('threadID');
+        ipc.send('openThread', threadID);
+    });
 }
 
 function setDisplayTab(tab) {
@@ -63,20 +68,15 @@ ipc.on('requestDisplayTab', (event, tab) => {
 });
 
 ipc.once('loadFacebookData', (event, threadData, tab) => {
-    mainLog('Facebook data sent to profile window.');
+    log('Facebook data sent to profile window.');
     appendThreadData(threadData);
 
     setDisplayTab(tab);
 
-    $('.messages-list-item').dblclick((clickEvent) => {
-        var threadID = $(clickEvent.delegateTarget).attr('threadID');
-        event.sender.send('openThread', threadID);
-    });
-
     $('#tab-content-div').scroll((scrollEvent) => {
         if (!threadsRequested) {
             if ($('#tab-content-div').scrollTop() + $('#tab-content-div').innerHeight() >= $('#tab-content-div')[0].scrollHeight && selectedTab == 'Messages') {
-                mainLog('Profile window: Scroll reached bottom, requesting more threads.');
+                log('Profile window: Scroll reached bottom, requesting more threads.');
                 threadsRequested = true;
                 event.sender.send('preloadMoreThreads');
             }
@@ -84,7 +84,7 @@ ipc.once('loadFacebookData', (event, threadData, tab) => {
     });
 
     ipc.on('loadMoreThreads', (loadThreadsEvent, moreThreadData) => {
-        mainLog('Profile window: Received more threads.');
+        log('Profile window: Received more threads.');
         appendThreadData(moreThreadData);
         threadsRequested = false;
     });
@@ -102,6 +102,6 @@ $('#messages-tab-button').click((event) => {
     setDisplayTab('Messages');
 });
 
-function mainLog(log) {
+function log(log) {
     ipc.send('console.log', log);
 }
