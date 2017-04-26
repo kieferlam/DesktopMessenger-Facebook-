@@ -367,7 +367,6 @@ function loadMessagesSync(event, conversation) {
 		api.getThreadHistory(conversation.threadID, CONVERSATION_LOAD_AMOUNT, conversation.lastMessageTimestamp, (err, history) => {
 			if (err) return console.log(err);
 			console.log(conversation.id + ' history loaded.');
-			console.log(history.length);
 			//Append history to conversation
 			history.forEach((msg, index) => {
 				conversation.history.push(msg);
@@ -470,17 +469,6 @@ app.on('before-quit', () => {
 });
 
 function runApi(api) {
-
-	// api.listen((err, message) => {
-	// 	if (message.type == 'message') {
-	// 		console.log('New message + ' + message.messageID);
-	// 		api.markAsRead(message.threadID, (err) => {
-	// 			if (err) return console.log(err);
-	// 			console.log('Marked as read ' + message.messageID);
-	// 		});
-	// 	}
-	// });
-
 }
 
 function runLogin(useAppState) {
