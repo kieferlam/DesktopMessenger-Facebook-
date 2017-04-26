@@ -82,8 +82,8 @@ let tray = null;
 function makeTrayIcon(api) {
 	tray = new Tray(path.join(__dirname, '/img/ico24.png'));
 	const contextMenu = Menu.buildFromTemplate([
-		{ label: 'Friends', type: 'normal', click: () => showProfileWindow(api, 'Friends') },
-		{ label: 'Messages', type: 'normal', click: () => showProfileWindow(api, 'Messages') },
+		{ label: 'Friends', type: 'normal', click: (menuitem, browser, event) => showProfileWindow(event, api, 'Friends') },
+		{ label: 'Messages', type: 'normal', click: (menuitem, browser, event) => showProfileWindow(event, api, 'Messages') },
 		{ type: 'separator' },
 		{ label: 'Settings', type: 'normal', click: () => showSettingsWindow() },
 		{ type: 'separator' },
@@ -163,8 +163,14 @@ function saveSettings() {
 	console.log('Saved settings.');
 }
 
-function showProfileWindow(api, defaultTab) {
+function showProfileWindow(event, api, defaultTab) {
 	console.log('Show profile window request. Tab: ' + defaultTab);
+	//If control is pressed, reload the window
+	if(event.ctrlKey && profileWindow != null){
+		profileWindow.close();
+		profileWindow = null;
+	}
+
 	if (profileWindow != null) {
 		profileWindow.webContents.send('requestDisplayTab', defaultTab);
 		profileWindow.show();
