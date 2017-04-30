@@ -15,13 +15,19 @@ $(document).ready(() => {
 });
 
 function friendsHTML(friend){
-    return `<div class="friend-div"><img class="friend_profile-img" src="${friend.profilePicture}" /><h1>${friend.fullName}</h1><div class="friend_options-div"><img src="./img/ico_more_vert.png" class="friend_options-img" /></div></div>`;
+    return `<div data-uid="${friend.userID}" class="friend-div"><img class="friend_profile-img" src="${friend.profilePicture}" /><h1>${friend.fullName}</h1><div class="friend_options-div"><img src="./img/ico_more_vert.png" class="friend_options-img" /></div></div>`;
+}
+
+function friendDblclickHandler(event){
+    var friendID = $(event.delegateTarget).attr('data-uid');
+    ipc.send('openThread', friendID);
 }
 
 function appendFriendsData(facebookData){
     facebookData.friendsList.forEach((friend, index)=>{
         $('#friends_content-div').append(friendsHTML(friend));
     });
+    $('.friend-div').dblclick(friendDblclickHandler);
 }
 
 function messagesListItemHTML(data, userInfo) {
