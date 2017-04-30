@@ -104,31 +104,28 @@ function sender_img_html(message) {
 
 function message_html(message) {
     var content = '';
-    if (message.body == undefined) {
-        message.attachments.forEach((attachment, index) => {
-            switch (attachment.type) {
-                case 'photo':
-                    content += '<img class="message-image clearfix" width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '" src="' + (attachment.hiresUrl || attachment.largePreviewUrl) + '" />';
-                    break;
-                case 'animated_image':
-                    content += '<img class="message-image clearfix" width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '" src="' + attachment.previewUrl + '" />';
-                    break;
-                case 'sticker':
-                    content += '<img class="message-image clearfix" width="' + attachment.width + '" height="' + attachment.height + '" src="' + attachment.url + '" />';;
-                    break;
-                case 'video':
-                    content += '<video width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '">';
-                    content += '<source src="' + attachment.url + '" type="video/mp4">';
-                    content += '</video>'
-                    break;
-                default:
-                    content += '[' + attachment.type + ']';
-                    break;
-            }
-        });
-    } else {
-        content = message.body;
-    }
+    message.attachments.forEach((attachment, index) => {
+        switch (attachment.type) {
+            case 'photo':
+                content += '<img class="message-image clearfix" width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '" src="' + (attachment.hiresUrl || attachment.largePreviewUrl) + '" />';
+                break;
+            case 'animated_image':
+                content += '<img class="message-image clearfix" width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '" src="' + attachment.previewUrl + '" />';
+                break;
+            case 'sticker':
+                content += '<img class="message-image clearfix" width="' + attachment.width + '" height="' + attachment.height + '" src="' + attachment.url + '" />';;
+                break;
+            case 'video':
+                content += '<video width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '">';
+                content += '<source src="' + attachment.url + '" type="video/mp4">';
+                content += '</video>'
+                break;
+            default:
+                content += '[' + attachment.type + ']';
+                break;
+        }
+    });
+    content += message.body;
     return '<p class="message-body clearfix">' + content + '</p>';
 }
 
