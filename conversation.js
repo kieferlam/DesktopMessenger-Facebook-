@@ -75,6 +75,8 @@ ipc.on('receive_thread', (event, data) => {
     var convImgSrc = (isGroup) ? thread.imageSrc : firstParticipant.thumbSrc;
     var convName = (isGroup) ? thread.name : firstParticipant.name;
 
+    ipc.send('conversation_set_title', {thread: thread, title: convName});
+
     $('#conversation-img').attr('src', convImgSrc);
     $('#conversation_name-h1').text(convName);
 });
@@ -93,41 +95,38 @@ function getUserImg(userInfo) {
     return userInfo.thumbSrc;
 }
 
-function getUserMessageHTML(messageBody, time, lmid) {
+function getUserMessageHTML(msg, time, lmid) {
     var timestamp = 'You ' + makeTimestamp('', time);
     var userInfo = getOwnUserInfo();
-    var html = '<div ' + (lmid != undefined ? ('id="' + lmid + '"') : '') + ' class="conversation_message-div"><div class="conversation_message_timestamp-div conversation_message_timestamp_user-div"><label>' + timestamp + '</label></div><div class="conversation_message_sender_img_user-div"><img src="' + userInfo.thumbSrc + '" class="conversation_message_sender-img" alt="Sender Image" /> </div> <div class="conversation_message_content_user-div"><p>' + messageBody + '</p></div></div>';
+    var html = '<div ' + (lmid != undefined ? ('id="' + lmid + '"') : '') + ' class="conversation_message-div"><div class="conversation_message_timestamp-div conversation_message_timestamp_user-div"><label>' + timestamp + '</label></div><div class="conversation_message_sender_img_user-div"><img src="' + userInfo.thumbSrc + '" class="conversation_message_sender-img" alt="Sender Image" /> </div> <div class="conversation_message_content_user-div"><p>' + buildMessageContent(msg) + '</p></div></div>';
     return html;
 }
 
 function buildMessageContent(msg) {
-    if (msg.body == undefined || msg.body.length == 0) {
-        var content = '';
-        msg.attachments.forEach((attachment, index) => {
-            switch (attachment.type) {
-                case 'photo':
-                    content += '<img class="message-image clearfix" width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '" src="' + (attachment.hiresUrl || attachment.largePreviewUrl) + '" />';
-                    break;
-                case 'animated_image':
-                    content += '<img class="message-image clearfix" width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '" src="' + attachment.previewUrl + '" />';
-                    break;
-                case 'sticker':
-                    content += '<img class="message-image clearfix" width="' + attachment.width + '" height="' + attachment.height + '" src="' + attachment.url + '" />';;
-                    break;
-                case 'video':
-                    content += '<video width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '">';
-                    content += '<source src="' + attachment.url + '" type="video/mp4">';
-                    content += '</video>'
-                    break;
-                default:
-                    content += '[' + attachment.type + ']';
-                    break;
-            }
-        });
-        return content;
-    } else {
-        return msg.body;
-    }
+    var content = '';
+    msg.attachments.forEach((attachment, index) => {
+        switch (attachment.type) {
+            case 'photo':
+                content += '<img class="message-image clearfix" width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '" src="' + (attachment.hiresUrl || attachment.largePreviewUrl) + '" />';
+                break;
+            case 'animated_image':
+                content += '<img class="message-image clearfix" width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '" src="' + attachment.previewUrl + '" />';
+                break;
+            case 'sticker':
+                content += '<img class="message-image clearfix" width="' + attachment.width + '" height="' + attachment.height + '" src="' + attachment.url + '" />';;
+                break;
+            case 'video':
+                content += '<video width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '">';
+                content += '<source src="' + attachment.url + '" type="video/mp4">';
+                content += '</video>'
+                break;
+            default:
+                content += '[' + attachment.type + ']';
+                break;
+        }
+    });
+    content += msg.body;
+    return content;
 }
 
 function getMessageHTML(userInfo, msg) {
@@ -141,7 +140,7 @@ function appendMessage(msg) {
     var userInfo = participantInfos[msg.senderID];
     var html = '';
     if (msg.senderID == userID) {
-        html = getUserMessageHTML(msg.body, msg.timestamp);
+        html = getUserMessageHTML(msg, msg.timestamp);
     } else {
         html = getMessageHTML(userInfo, msg);
     }
@@ -154,7 +153,7 @@ function makeMessagesHTML(msgs) {
     msgs.forEach((msg, index) => {
         var userInfo = participantInfos[msg.senderID];
         if (msg.senderID == userID) {
-            buffer += getUserMessageHTML(msg.body, msg.timestamp);
+            buffer += getUserMessageHTML(msg, msg.timestamp);
         } else {
             buffer += getMessageHTML(userInfo, msg);
         }
@@ -198,6 +197,8 @@ ipc.on('receive_history', (event, history) => {
 
 ipc.on('receive_message', (event, msg) => {
     var shouldScroll = checkScrollLocked();
+    //Store the difference in scroll from bottom
+    var scrollFromBottom = getBottomScroll() - $('#conversation_messages-div').scrollTop();
     msg.timestamp = Date.now();
     $('#conversation_messages-div').append(makeMessagesHTML([msg]));
     if (shouldScroll) {
