@@ -166,7 +166,7 @@ function saveSettings() {
 function showProfileWindow(event, api, defaultTab) {
 	console.log('Show profile window request. Tab: ' + defaultTab);
 	//If control is pressed, reload the window
-	if(event.ctrlKey && profileWindow != null){
+	if (event.ctrlKey && profileWindow != null) {
 		profileWindow.close();
 		profileWindow = null;
 	}
@@ -312,7 +312,16 @@ ipc.on('openThread', (event, threadID) => {
 
 		if (threadIndex < 0) {
 			console.log(conversation.id + ' thread is not loaded.');
-			conversation.window.close();
+			fb((api) => {
+				api.getThreadInfo(conversation.threadID, (err, thread) => {
+					if (err) return console.log(err);
+					preloadedThreads.push(thread);
+					//Send thread info
+					event.sender.send('receive_thread', { thread: thread, userID: currentUserID, userInfos: preloadedUserInfo });
+					//Load thread history
+					loadMessagesSync(event, conversation);
+				});
+			});
 		} else {
 			console.log(conversation.id + ' thread is already loaded.');
 			var thread = preloadedThreads[threadIndex];
@@ -657,6 +666,7 @@ function handleMessage(api, message) {
 	var conversationExists = false;
 	conversations.filter((conv) => conv.threadID == message.threadID).forEach((conv, index) => {
 		conv.window.webContents.send('receive_message', message);
+		if (!conv.window.isFocused()) conv.window.flashFrame(true);
 		conversationExists = true;
 	});
 
@@ -892,6 +902,15 @@ ipc.on('apiSend', (event, msg) => {
 		});
 	});
 });
+
+ipc.on('conversation_set_title', (event, data) => {
+	console.log('Setting conversation title of thread ' + data.thread.threadID + ' to ' + data.title);
+	var conversation = conversations.find((conv, index) => conv.threadID == data.thread.threadID);
+	if(conversation != undefined){
+		conversation.window.setTitle(data.title);
+	}
+});
+
 
 function collect() {
 	var ret = {};
