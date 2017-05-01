@@ -3,7 +3,7 @@
 const electron = require('electron');
 
 //globalShortcut for global keyboard events for testing
-const { app, BrowserWindow, Tray, Menu, dialog, globalShortcut } = electron;
+const { app, BrowserWindow, Tray, Menu, dialog, globalShortcut, nativeImage } = electron;
 
 //Error handling
 process.on('uncaughtException', (err) => {
@@ -903,14 +903,42 @@ ipc.on('apiSend', (event, msg) => {
 	});
 });
 
+/*
+	CONVERSATION IPC FUNCTIONS
+*/
+
 ipc.on('conversation_set_title', (event, data) => {
 	console.log('Setting conversation title of thread ' + data.thread.threadID + ' to ' + data.title);
 	var conversation = conversations.find((conv, index) => conv.threadID == data.thread.threadID);
-	if(conversation != undefined){
+	if (conversation != undefined) {
 		conversation.window.setTitle(data.title);
 	}
 });
 
+ipc.on('conversation_set_icon', (event, data) => {
+	console.log('Setting conversation icon of thread ' + data.thread.threadID + ' to ' + data.iconSrc);
+	var conversation = conversations.find((conv, index) => conv.threadID == data.thread.threadID);
+	if (conversation != undefined) {
+		if (data.iconSrc != undefined && data.iconSrc != null) {
+			request({ url: data.iconSrc, encoding: null }, (error, response, body) => {
+				if (response.statusCode == 200) {
+					conversation.window.setIcon(nativeImage.createFromBuffer(body));
+				} else {
+					console.log('Couldn\'t load icon at ' + data.iconSrc);
+					if (data.icon != undefined && data.icon != null) {
+						conversation.window.setIcon(data.icon);
+					}
+				}
+			});
+		} else if (data.icon != undefined && data.icon != null) {
+			conversation.window.setIcon(data.icon);
+		}
+	}
+});
+
+/*
+	MISCELLANOUS FUNCTIONS
+*/
 
 function collect() {
 	var ret = {};

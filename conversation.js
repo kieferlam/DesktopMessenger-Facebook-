@@ -76,6 +76,7 @@ ipc.on('receive_thread', (event, data) => {
     var convName = (isGroup) ? thread.name : firstParticipant.name;
 
     ipc.send('conversation_set_title', {thread: thread, title: convName});
+    ipc.send('conversation_set_icon', {thread: thread, iconSrc: convImgSrc});
 
     $('#conversation-img').attr('src', convImgSrc);
     $('#conversation_name-h1').text(convName);
@@ -104,6 +105,7 @@ function getUserMessageHTML(msg, time, lmid) {
 
 function buildMessageContent(msg) {
     var content = '';
+    if(typeof msg.attachments == typeof [])
     msg.attachments.forEach((attachment, index) => {
         switch (attachment.type) {
             case 'photo':
