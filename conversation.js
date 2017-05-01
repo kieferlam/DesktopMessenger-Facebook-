@@ -70,7 +70,7 @@ ipc.on('receive_thread', (event, data) => {
     participantInfos = data.userInfos;
 
     var isGroup = thread.participantIDs.length > 2;
-    var firstParticipant = data.userInfos[thread.participantIDs[0]];
+    var firstParticipant = participantInfos[thread.participantIDs[0]];
 
     var convImgSrc = (isGroup) ? thread.imageSrc : firstParticipant.thumbSrc;
     var convName = (isGroup) ? thread.name : firstParticipant.name;

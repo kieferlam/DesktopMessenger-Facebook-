@@ -316,10 +316,24 @@ ipc.on('openThread', (event, threadID) => {
 				api.getThreadInfo(conversation.threadID, (err, thread) => {
 					if (err) return console.log(err);
 					preloadedThreads.push(thread);
-					//Send thread info
-					event.sender.send('receive_thread', { thread: thread, userID: currentUserID, userInfos: preloadedUserInfo });
-					//Load thread history
-					loadMessagesSync(event, conversation);
+
+					//Load users
+					var unloadedUserIDs = thread.participantIDs.filter((id) => preloadedUserInfo[id] == undefined);
+					if (unloadedUserIDs.length > 0) {
+						//Load user infos then send
+						api.getUserInfo(unloadedUserIDs, (err, users) => {
+							preloadedUserInfo = collect(preloadedUserInfo, users);
+							//Send thread info
+							event.sender.send('receive_thread', { thread: thread, userID: currentUserID, userInfos: preloadedUserInfo });
+							//Load thread history
+							loadMessagesSync(event, conversation);
+						});
+					} else {
+						//Send thread info
+						event.sender.send('receive_thread', { thread: thread, userID: currentUserID, userInfos: preloadedUserInfo });
+						//Load thread history
+						loadMessagesSync(event, conversation);
+					}
 				});
 			});
 		} else {
