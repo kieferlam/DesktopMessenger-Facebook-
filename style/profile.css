@@ -245,3 +245,10 @@ body{
 .messages-list-item-control{
     float: right;
 }
+
+
+/* Misc */
+
+.search-remove{
+    display: none;
+}

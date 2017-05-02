@@ -4,6 +4,10 @@ const remote = electron.remote;
 
 var ipc = electron.ipcRenderer;
 
+window.onerror = function (error, url, line) {
+    log("Error at " + url + " on line " + line + ": " + error);
+};
+
 const $ = require('jquery');
 
 var threadsRequested = false;
@@ -20,7 +24,23 @@ $(document).ready(() => {
     $('#messages-tab-button').click((event) => {
         setDisplayTab('Messages');
     });
+
+    $('#search-textfield').on('input', (event) => {
+        filterFriends($('#search-textfield').val());
+    });
 });
+
+function filterFriends(regex) {
+    var search = regex.toLowerCase();
+    $('.friend-div').each((index, element) => {
+        var name = $(element).children('h1').text().toLowerCase();
+        if (name.indexOf(search) > 0 || regex.length == 0) {
+            $(element).removeClass('search-remove');
+        } else {
+            $(element).addClass('search-remove');
+        }
+    });
+}
 
 function friendsHTML(friend) {
     return `<div data-uid="${friend.userID}" class="friend-div"><img class="friend_profile-img" src="${friend.profilePicture}" /><h1>${friend.fullName}</h1><div class="friend_options-div"><img src="./img/ico_more_vert.png" class="friend_options-img" /></div></div>`;
