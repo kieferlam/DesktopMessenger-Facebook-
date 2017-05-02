@@ -75,8 +75,8 @@ ipc.on('receive_thread', (event, data) => {
     var convImgSrc = (isGroup) ? thread.imageSrc : firstParticipant.thumbSrc;
     var convName = (isGroup) ? thread.name : firstParticipant.name;
 
-    ipc.send('conversation_set_title', {thread: thread, title: convName});
-    ipc.send('conversation_set_icon', {thread: thread, iconSrc: convImgSrc});
+    ipc.send('conversation_set_title', { thread: thread, title: convName });
+    ipc.send('conversation_set_icon', { thread: thread, iconSrc: convImgSrc });
 
     $('#conversation-img').attr('src', convImgSrc);
     $('#conversation_name-h1').text(convName);
@@ -105,29 +105,29 @@ function getUserMessageHTML(msg, time, lmid) {
 
 function buildMessageContent(msg) {
     var content = '';
-    if(typeof msg.attachments == typeof [])
-    msg.attachments.forEach((attachment, index) => {
-        switch (attachment.type) {
-            case 'photo':
-                content += '<img class="message-image clearfix" width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '" src="' + (attachment.hiresUrl || attachment.largePreviewUrl) + '" />';
-                break;
-            case 'animated_image':
-                content += '<img class="message-image clearfix" width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '" src="' + attachment.previewUrl + '" />';
-                break;
-            case 'sticker':
-                content += '<img class="message-image clearfix" width="' + attachment.width + '" height="' + attachment.height + '" src="' + attachment.url + '" />';;
-                break;
-            case 'video':
-                content += '<video width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '">';
-                content += '<source src="' + attachment.url + '" type="video/mp4">';
-                content += '</video>'
-                break;
-            default:
-                content += '[' + attachment.type + ']';
-                break;
-        }
-    });
-    content += msg.body;
+    if (typeof msg.attachments == typeof [])
+        msg.attachments.forEach((attachment, index) => {
+            switch (attachment.type) {
+                case 'photo':
+                    content += '<img class="message-image clearfix" width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '" src="' + (attachment.hiresUrl || attachment.largePreviewUrl) + '" />';
+                    break;
+                case 'animated_image':
+                    content += '<img class="message-image clearfix" width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '" src="' + attachment.previewUrl + '" />';
+                    break;
+                case 'sticker':
+                    content += '<img class="message-image clearfix" width="' + attachment.width + '" height="' + attachment.height + '" src="' + attachment.url + '" />';;
+                    break;
+                case 'video':
+                    content += '<video width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '">';
+                    content += '<source src="' + attachment.url + '" type="video/mp4">';
+                    content += '</video>'
+                    break;
+                default:
+                    content += '[' + attachment.type + ']';
+                    break;
+            }
+        });
+    content += msg.body || (typeof msg == 'object' ? '' : msg);
     return content;
 }
 
