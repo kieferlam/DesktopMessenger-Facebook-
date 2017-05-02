@@ -12,19 +12,27 @@ var selectedTab;
 
 $(document).ready(() => {
     ipc.send('profileDomLoaded');
+
+    $('#friends-tab-button').click((event) => {
+        setDisplayTab('Friends');
+    });
+
+    $('#messages-tab-button').click((event) => {
+        setDisplayTab('Messages');
+    });
 });
 
-function friendsHTML(friend){
+function friendsHTML(friend) {
     return `<div data-uid="${friend.userID}" class="friend-div"><img class="friend_profile-img" src="${friend.profilePicture}" /><h1>${friend.fullName}</h1><div class="friend_options-div"><img src="./img/ico_more_vert.png" class="friend_options-img" /></div></div>`;
 }
 
-function friendDblclickHandler(event){
+function friendDblclickHandler(event) {
     var friendID = $(event.delegateTarget).attr('data-uid');
     ipc.send('openThread', friendID);
 }
 
-function appendFriendsData(facebookData){
-    facebookData.friendsList.forEach((friend, index)=>{
+function appendFriendsData(facebookData) {
+    facebookData.friendsList.forEach((friend, index) => {
         $('#friends_content-div').append(friendsHTML(friend));
     });
     $('.friend-div').dblclick(friendDblclickHandler);
@@ -110,14 +118,6 @@ ipc.once('loadFacebookData', (event, facebookData, tab) => {
 });
 
 
-
-$('#friends-tab-button').click((event) => {
-    setDisplayTab('Friends');
-});
-
-$('#messages-tab-button').click((event) => {
-    setDisplayTab('Messages');
-});
 
 function log(log) {
     ipc.send('console.log', log);
