@@ -132,6 +132,11 @@ body{
     width: 100%;
     height: auto;
     overflow: hidden;
+    transition: 150ms;
+}
+
+.friend-div:hover{
+    background: rgba(59,89,152, 0.2);
 }
 
 .friend_profile-img{
@@ -147,7 +152,7 @@ body{
 }
 
 .friend-div h1{
-    font-size: 24pt;
+    font-size: 20pt;
     font-weight: 100;
     padding-top: 8pt;
     float: left;
