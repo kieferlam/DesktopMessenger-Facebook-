@@ -133,6 +133,8 @@ body{
     height: auto;
     overflow: hidden;
     transition: 150ms;
+
+    user-select: none;
 }
 
 .friend-div:hover{
@@ -190,6 +192,8 @@ body{
     border-top: 1px solid rgba(0,0,0,0.1);
     overflow: hidden;
     transition: 150ms;
+
+    user-select: none;
 }
 
 .messages-list-item:hover{
