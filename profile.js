@@ -34,7 +34,7 @@ function filterFriends(regex) {
     var search = regex.toLowerCase();
     $('.friend-div').each((index, element) => {
         var name = $(element).children('h1').text().toLowerCase();
-        if (name.indexOf(search) > 0 || regex.length == 0) {
+        if (name.indexOf(search) > -1 || regex.length == 0) {
             $(element).removeClass('search-remove');
         } else {
             $(element).addClass('search-remove');
@@ -111,10 +111,18 @@ ipc.on('requestDisplayTab', (event, tab) => {
     setDisplayTab(tab);
 });
 
+ipc.on('profile_picture_loaded', (event, picData)=>{
+    $('.friend-div[data-uid="'+picData.uid+'"]').each((index, element) => {
+        $(element).children('.friend_profile-img').attr('src', picData.data.url);
+    });
+});
+
 ipc.once('loadFacebookData', (event, facebookData, tab) => {
     log('Facebook data sent to profile window.');
     appendThreadData(facebookData);
     appendFriendsData(facebookData);
+
+    ipc.send('request_profile_picture_load', facebookData.friendsList);
 
     setDisplayTab(tab);
 

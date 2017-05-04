@@ -17,6 +17,7 @@ const fs = require('fs');
 const request = require('request');
 const appPackage = require('./package.json');
 const spawn = require('child_process').spawn;
+const graph = require('./graph.js');
 
 const message_win_width = 360;
 
@@ -215,7 +216,6 @@ function showProfileWindow(event, api, defaultTab) {
 			api.getFriendsList((err, data) => {
 				if (err) return console.error(err);
 				facebookData.friendsList = data;
-
 				facebookData.participantInfo = preloadedUserInfo;
 
 				//Send facebook data to profile process
@@ -913,6 +913,19 @@ ipc.on('apiSend', (event, msg) => {
 		console.log('Sending api message.');
 		elem.api.sendMessage(msg.body, msg.thread, (err, msgInfo) => {
 			event.sender.send('apiSendCallback', err, msgInfo);
+		});
+	});
+});
+
+/*
+	PROFILE FRIENDS LIST IPC FUNCTIONS
+*/
+
+ipc.on('request_profile_picture_load', (event, friendsList)=>{
+	friendsList.forEach((friend, index)=>{
+		graph.getProfilePictureURL(friend.userID, 256, (error, data)=>{
+			if(error) return console.log(`Couldn't load profile picture for user ${friend.userID}`);
+			event.sender.send('profile_picture_loaded', {data: data.data, uid: friend.userID});
 		});
 	});
 });
