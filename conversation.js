@@ -105,7 +105,7 @@ function getUserMessageHTML(msg, time, lmid) {
 
 function buildMessageContent(msg) {
     var content = '';
-    if (typeof msg.attachments == typeof [])
+    if (Array.isArray(msg.attachments))
         msg.attachments.forEach((attachment, index) => {
             switch (attachment.type) {
                 case 'photo':

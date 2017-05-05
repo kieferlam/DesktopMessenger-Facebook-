@@ -104,7 +104,7 @@ function sender_img_html(message) {
 
 function message_html(message) {
     var content = '';
-    if(typeof message.attachments == typeof [])
+    if(Array.isArray(message.attachments))
     message.attachments.forEach((attachment, index) => {
         switch (attachment.type) {
             case 'photo':
