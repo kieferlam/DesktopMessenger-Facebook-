@@ -17,7 +17,7 @@ var interacted = false;
 
 var oldScrollHeight = 0;
 
-var threadId;
+var threadID;
 
 var completeData;
 var userInfo;
@@ -36,13 +36,19 @@ $(document).click(() => {
     $('#content-div').removeClass('translucent');
 });
 
+ipc.on('profile_picture_loaded', (event, data)=>{
+    if(data.isThread && data.threadID == threadID){
+        $('#thread_pic').attr('src', data.data.url);
+    }
+});
+
 ipc.once('initMessageDetails', (event, threadinfo, messageInfo, preloadedUserInfo) => {
     log('Initial message update.');
-    threadId = messageInfo.message.threadID;
+    threadID = messageInfo.message.threadID;
     userInfo = preloadedUserInfo;
     completeData = { threadInfo: threadinfo, userInfo: messageInfo, message: messageInfo.message };
     if (!DEBUG_LOCAL_MODE) {
-        event.sender.send('pollPreloadedThreads', messageInfo.message.threadID);
+        event.sender.send('pollPreloadedThreads', threadID);
         ipc.once('preloadedThreadInfo', (event, threadData) => {
             if (threadData == null) {
                 threadData = { imageSrc: null };
@@ -52,6 +58,7 @@ ipc.once('initMessageDetails', (event, threadinfo, messageInfo, preloadedUserInf
             var sender_name = messageInfo.data.name + ((messageInfo.data.alternateName != undefined) ? ' (' + messageInfo.data.alternateName + ')' : '');
             $('#sender_name').text(messageInfo.data.isGroup ? sender_name : '');
             appendMessage(messageInfo.message);
+            ipc.send('request_profile_picture_load', {friends: null, threads: [threadID]});
             event.sender.send('readyToDisplay', $('body')[0].scrollHeight);
         });
     } else {
@@ -182,7 +189,7 @@ function sendMsg(replyMsg) {
     appendUserMessage(messageId, replyMsg, timestampId);
     if (!DEBUG_LOCAL_MODE) {
         //Send via api
-        ipc.send('apiSend', { body: replyMsg, thread: threadId });
+        ipc.send('apiSend', { body: replyMsg, thread: threadID });
         ipc.once('apiSendCallback', (event, err, msgInfo) => {
             $('#' + messageId).removeClass('unsent');
             $('#' + timestampId).val(msgInfo.timestamp);
