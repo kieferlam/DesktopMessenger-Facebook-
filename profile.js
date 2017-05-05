@@ -111,10 +111,17 @@ ipc.on('requestDisplayTab', (event, tab) => {
     setDisplayTab(tab);
 });
 
-ipc.on('profile_picture_loaded', (event, picData)=>{
-    $('.friend-div[data-uid="'+picData.uid+'"]').each((index, element) => {
-        $(element).children('.friend_profile-img').attr('src', picData.data.url);
-    });
+ipc.on('profile_picture_loaded', (event, picData) => {
+    if (picData.isFriend) {
+        $('.friend-div[data-uid="' + picData.uid + '"]').each((index, element) => {
+            $(element).children('.friend_profile-img').attr('src', picData.data.url);
+        });
+    }
+    if (picData.isThread) {
+        $('.messages-list-item[threadID="' + picData.threadID + '"]').each((index, element) => {
+            $(element).children('.list-item-icon-image').attr('src', picData.data.url);
+        });
+    }
 });
 
 ipc.once('loadFacebookData', (event, facebookData, tab) => {
@@ -122,7 +129,7 @@ ipc.once('loadFacebookData', (event, facebookData, tab) => {
     appendThreadData(facebookData);
     appendFriendsData(facebookData);
 
-    ipc.send('request_profile_picture_load', facebookData.friendsList);
+    ipc.send('request_profile_picture_load', { friends: facebookData.friendsList, threads: facebookData.messageThreads });
 
     setDisplayTab(tab);
 
@@ -136,15 +143,16 @@ ipc.once('loadFacebookData', (event, facebookData, tab) => {
         }
     });
 
-    ipc.on('loadMoreThreads', (loadThreadsEvent, moreThreadData) => {
-        log('Profile window: Received more threads.');
-        appendThreadData(moreThreadData);
-        threadsRequested = false;
-    });
-
     event.sender.send('facebookDataLoaded');
 });
 
+
+ipc.on('loadMoreThreads', (loadThreadsEvent, moreThreadData) => {
+    log('Profile window: Received more threads.');
+    appendThreadData(moreThreadData);
+    ipc.send('request_profile_picture_load', { friends: null, threads: moreThreadData.messageThreads });
+    threadsRequested = false;
+});
 
 
 function log(log) {

@@ -921,13 +921,23 @@ ipc.on('apiSend', (event, msg) => {
 	PROFILE FRIENDS LIST IPC FUNCTIONS
 */
 
-ipc.on('request_profile_picture_load', (event, friendsList)=>{
-	friendsList.forEach((friend, index)=>{
-		graph.getProfilePictureURL(friend.userID, 256, (error, data)=>{
-			if(error) return console.log(`Couldn't load profile picture for user ${friend.userID}`);
-			event.sender.send('profile_picture_loaded', {data: data.data, uid: friend.userID});
+ipc.on('request_profile_picture_load', (event, data) => {
+	if (Array.isArray(data.friends)) {
+		data.friends.forEach((friend, index) => {
+			graph.getProfilePictureURL(friend.userID, 256, (error, data) => {
+				if (error) return console.log(`Couldn't load profile picture for user ${friend.userID}`);
+				event.sender.send('profile_picture_loaded', { data: data.data, uid: friend.userID, isFriend: true, isThread: false });
+			});
 		});
-	});
+	}
+	if (Array.isArray(data.threads)) {
+		data.threads.filter((thread) => thread.isCanonicalUser).forEach((thread, index)=>{
+			graph.getProfilePictureURL(thread.threadID, 256, (error, data) => {
+				if (error) return console.log(`Couldn't load profile picture for thread ${thread.threadID}`);
+				event.sender.send('profile_picture_loaded', { data: data.data, threadID: thread.threadID, isThread: true, isFriend: false });
+			});
+		});
+	}
 });
 
 /*
