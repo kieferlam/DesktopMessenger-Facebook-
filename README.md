@@ -7,6 +7,8 @@ DesktopMessenger is currently beta software so expect bugs and incomplete functi
 
 *Disclaimer*: We are not resposible for anything that happens to your account, e.g. account getting banned. DesktopMessenger does not store your password at all so any security problems will be unrelated to us or our software.
 
+![](https://thumbs.gfycat.com/HeavyColdAttwatersprairiechicken-mobile.mp4)
+
 ## Install
 To install, simply download the ZIP file (DesktopMessenger.zip) from [releases](https://github.com/mangopearapples/DesktopMessenger/releases) and run DesktopMessenger.exe after you extract the ZIP file. 
 The executable will prompt may prompt you to download an update which will download the latest version of the app.
