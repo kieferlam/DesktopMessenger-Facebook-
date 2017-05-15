@@ -59,7 +59,7 @@ ipc.once('initMessageDetails', (event, threadinfo, messageInfo, preloadedUserInf
             var sender_name = messageInfo.data.name + ((messageInfo.data.alternateName != undefined) ? ' (' + messageInfo.data.alternateName + ')' : '');
             $('#sender_name').text(messageInfo.data.isGroup ? sender_name : '');
             appendMessage(messageInfo.message);
-            ipc.send('request_profile_picture_load', { friends: null, threads: [threadID] });
+            ipc.send('request_profile_picture_load', { friends: null, threads: [threadinfo] });
             event.sender.send('readyToDisplay', $('body')[0].scrollHeight);
         });
     } else {
