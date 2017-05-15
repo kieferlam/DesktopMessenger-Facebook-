@@ -27,7 +27,7 @@ const isWindows = os.platform == 'win32';
 const isMac = os.platform == 'darwin';
 
 //TURN THIS OFF FOR DEPLOY
-const DEBUG_LOCAL_MODE = false;
+const DEBUG_LOCAL_MODE = true;
 global.DEBUG_LOCAL_MODE = DEBUG_LOCAL_MODE;
 
 var ipc = electron.ipcMain;
@@ -460,7 +460,7 @@ app.on('ready', () => {
 			const debugMsg1 = globalShortcut.register('CmdOrCtrl+M', () => {
 				handleMessage(null, {
 					senderID: 'TestID',
-					body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus imperdiet tristique nunc in tristique. Etiam fringilla ligula magna, quis aliquam.',
+					body: 'It\'s a figure of speech, Morty.',
 					threadID: 'TestThreadID',
 					messageID: 'TestMsgID',
 					attachments: [],
@@ -469,9 +469,9 @@ app.on('ready', () => {
 			});
 			const debugMsg2 = globalShortcut.register('CmdOrCtrl+L', () => {
 				handleMessage(null, {
-					senderID: 'TestID2',
-					body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus imperdiet tristique nunc in tristique. Etiam fringilla ligula magna, quis aliquam.',
-					threadID: 'TestThreadID2',
+					senderID: 'TestID',
+					body: 'They\'re bureaucrats, I don\'t respect them.',
+					threadID: 'TestThreadID',
 					messageID: 'TestMsgID2',
 					attachments: [],
 					isGroup: false
@@ -479,9 +479,9 @@ app.on('ready', () => {
 			});
 			const debugMsg3 = globalShortcut.register('CmdOrCtrl+H', () => {
 				handleMessage(null, {
-					senderID: 'TestID3',
-					body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus imperdiet tristique nunc in tristique. Etiam fringilla ligula magna, quis aliquam.',
-					threadID: 'TestThreadID3',
+					senderID: 'TestID',
+					body: 'Keep shooting them, Morty.',
+					threadID: 'TestThreadID',
 					messageID: 'TestMsgID3',
 					attachments: [],
 					isGroup: false
@@ -637,7 +637,7 @@ function loginSuccess(api) {
 	workAreaSize = { width: width, height: height };
 	quickMessageMaxHeight = Math.floor(workAreaSize.height * (1.0 / 3.0));
 	loggedIn = true;
-	currentUserID = api.getCurrentUserID();
+	currentUserID = DEBUG_LOCAL_MODE ? 0 : api.getCurrentUserID();
 	makeTrayIcon(api);
 
 	if (!DEBUG_LOCAL_MODE) {
@@ -923,7 +923,7 @@ ipc.on('apiSend', (event, msg) => {
 
 ipc.on('request_profile_picture_load', (event, data) => {
 	if (Array.isArray(data.friends)) {
-		data.friends.forEach((friend, index) => {
+		data.friends.filter((friend) => friend.userID != 0).forEach((friend, index) => {
 			graph.getProfilePictureURL(friend.userID, 256, (error, data) => {
 				if (error) return console.log(`Couldn't load profile picture for user ${friend.userID}`);
 				event.sender.send('profile_picture_loaded', { data: data.data, uid: friend.userID, isFriend: true, isThread: false });
@@ -931,7 +931,7 @@ ipc.on('request_profile_picture_load', (event, data) => {
 		});
 	}
 	if (Array.isArray(data.threads)) {
-		data.threads.filter((thread) => thread.isCanonicalUser).forEach((thread, index)=>{
+		data.threads.filter((thread) => (thread.isCanonicalUser && thread.threadID != 0)).forEach((thread, index) => {
 			graph.getProfilePictureURL(thread.threadID, 256, (error, data) => {
 				if (error) return console.log(`Couldn't load profile picture for thread ${thread.threadID}`);
 				event.sender.send('profile_picture_loaded', { data: data.data, threadID: thread.threadID, isThread: true, isFriend: false });

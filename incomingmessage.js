@@ -36,8 +36,8 @@ $(document).click(() => {
     $('#content-div').removeClass('translucent');
 });
 
-ipc.on('profile_picture_loaded', (event, data)=>{
-    if(data.isThread && data.threadID == threadID){
+ipc.on('profile_picture_loaded', (event, data) => {
+    if (data.isThread && data.threadID == threadID) {
         $('#thread_pic').attr('src', data.data.url);
     }
 });
@@ -53,15 +53,18 @@ ipc.once('initMessageDetails', (event, threadinfo, messageInfo, preloadedUserInf
             if (threadData == null) {
                 threadData = { imageSrc: null };
             }
-            $('#thread_pic').attr('src', threadData.imageSrc == null ? messageInfo.data.thumbSrc : threadData.imageSrc);
+            var threadPic = threadData.imageSrc == null ? messageInfo.data.thumbSrc : threadData.imageSrc;
+            $('#thread_pic').attr('src', threadPic);
             $('#thread_name').text(threadinfo.name);
             var sender_name = messageInfo.data.name + ((messageInfo.data.alternateName != undefined) ? ' (' + messageInfo.data.alternateName + ')' : '');
             $('#sender_name').text(messageInfo.data.isGroup ? sender_name : '');
             appendMessage(messageInfo.message);
-            ipc.send('request_profile_picture_load', {friends: null, threads: [threadID]});
+            ipc.send('request_profile_picture_load', { friends: null, threads: [threadID] });
             event.sender.send('readyToDisplay', $('body')[0].scrollHeight);
         });
     } else {
+        /*$('#thread_pic').attr('src', 'https://scontent.cdninstagram.com/t51.2885-15/s480x480/e35/c0.132.1059.1059/15538666_155311788287580_7134709718320152576_n.jpg?ig_cache_key=MTQxODA1NjMwOTQ0NTcyMTYyOA%3D%3D.2.c');
+        $('#thread_name').text('Rick');*/
         appendMessage(messageInfo.message);
         event.sender.send('readyToDisplay', $('body')[0].scrollHeight);
     }
@@ -111,28 +114,28 @@ function sender_img_html(message) {
 
 function message_html(message) {
     var content = '';
-    if(Array.isArray(message.attachments))
-    message.attachments.forEach((attachment, index) => {
-        switch (attachment.type) {
-            case 'photo':
-                content += '<img class="message-image clearfix" width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '" src="' + (attachment.hiresUrl || attachment.largePreviewUrl) + '" />';
-                break;
-            case 'animated_image':
-                content += '<img class="message-image clearfix" width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '" src="' + attachment.previewUrl + '" />';
-                break;
-            case 'sticker':
-                content += '<img class="message-image clearfix" width="' + attachment.width + '" height="' + attachment.height + '" src="' + attachment.url + '" />';;
-                break;
-            case 'video':
-                content += '<video width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '">';
-                content += '<source src="' + attachment.url + '" type="video/mp4">';
-                content += '</video>'
-                break;
-            default:
-                content += '[' + attachment.type + ']';
-                break;
-        }
-    });
+    if (Array.isArray(message.attachments))
+        message.attachments.forEach((attachment, index) => {
+            switch (attachment.type) {
+                case 'photo':
+                    content += '<img class="message-image clearfix" width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '" src="' + (attachment.hiresUrl || attachment.largePreviewUrl) + '" />';
+                    break;
+                case 'animated_image':
+                    content += '<img class="message-image clearfix" width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '" src="' + attachment.previewUrl + '" />';
+                    break;
+                case 'sticker':
+                    content += '<img class="message-image clearfix" width="' + attachment.width + '" height="' + attachment.height + '" src="' + attachment.url + '" />';;
+                    break;
+                case 'video':
+                    content += '<video width="' + attachment.previewWidth + '" height="' + attachment.previewHeight + '">';
+                    content += '<source src="' + attachment.url + '" type="video/mp4">';
+                    content += '</video>'
+                    break;
+                default:
+                    content += '[' + attachment.type + ']';
+                    break;
+            }
+        });
     content += message.body;
     return '<p class="message-body clearfix">' + content + '</p>';
 }
@@ -142,7 +145,7 @@ function sender_name() {
         var nick = completeData.threadInfo.nicknames[lastSenderID.toString()];
         if (nick != null) return nick + ' (' + userInfo[lastSenderID].name + ') ';
     }
-    return userInfo[lastSenderID].name;
+    return DEBUG_LOCAL_MODE ? 'Rick' : userInfo[lastSenderID].name;
 }
 
 function timestamp_html(date) {
