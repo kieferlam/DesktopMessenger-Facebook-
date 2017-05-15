@@ -80,6 +80,12 @@ ipc.on('receive_thread', (event, data) => {
 
     $('#conversation-img').attr('src', convImgSrc);
     $('#conversation_name-h1').text(convName);
+
+    event.sender.send('request_profile_picture_load', {friends:null, threads: [thread]});
+});
+
+ipc.on('profile_picture_loaded', (event, data)=>{
+    $('#conversation-img').attr('src', data.data.url);
 });
 
 function time_as_string(date) {
