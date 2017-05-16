@@ -27,7 +27,7 @@ const isWindows = os.platform == 'win32';
 const isMac = os.platform == 'darwin';
 
 //TURN THIS OFF FOR DEPLOY
-const DEBUG_LOCAL_MODE = true;
+const DEBUG_LOCAL_MODE = false;
 global.DEBUG_LOCAL_MODE = DEBUG_LOCAL_MODE;
 
 var ipc = electron.ipcMain;
@@ -500,6 +500,7 @@ app.on('before-quit', () => {
 function runApi(api) {
 }
 
+var login_fail_retry_count = 0;
 function runLogin(useAppState) {
 
 	if (DEBUG_LOCAL_MODE) {
@@ -512,7 +513,13 @@ function runLogin(useAppState) {
 					if (err) {
 						console.log('Appstate login error.');
 						console.error(err);
-						runLogin(false);
+						if(login_fail_retry_count >= 10){
+							runLogin(false);
+						}else{
+							console.log('Retrying login...');
+							setTimeout(()=>runLogin(useAppState, ++login_fail_retry_count), 3000);
+						}
+
 					} else {
 						facebook = api;
 						runApi(api);
