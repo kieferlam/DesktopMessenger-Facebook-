@@ -1,4 +1,5 @@
 const electron = require('electron');
+const { shell } = electron;
 
 const remote = electron.remote;
 
@@ -81,10 +82,10 @@ ipc.on('receive_thread', (event, data) => {
     $('#conversation-img').attr('src', convImgSrc);
     $('#conversation_name-h1').text(convName);
 
-    event.sender.send('request_profile_picture_load', {friends:null, threads: [thread]});
+    event.sender.send('request_profile_picture_load', { friends: null, threads: [thread] });
 });
 
-ipc.on('profile_picture_loaded', (event, data)=>{
+ipc.on('profile_picture_loaded', (event, data) => {
     $('#conversation-img').attr('src', data.data.url);
 });
 
@@ -133,7 +134,7 @@ function buildMessageContent(msg) {
                     break;
             }
         });
-    content += msg.body || (typeof msg == 'object' ? '' : msg);
+    content += urlify(msg.body) || (typeof msg == 'object' ? '' : urlify(msg));
     return content;
 }
 
@@ -241,6 +242,21 @@ function scrollToBottom() {
 function getOwnUserInfo() {
     return participantInfos[userID];
 }
+
+
+
+
+function urlify(text) {
+    if (text == undefined || text == null) return text;
+    var urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.replace(urlRegex, function (url) {
+        return '<a onClick="shell.openExternal(\'' + url + '\')">' + url + '</a>';
+    })
+    // or alternatively
+    // return text.replace(urlRegex, '<a href="$1">$1</a>')
+}
+
+
 
 function log(log) {
     ipc.send('console.log', log);

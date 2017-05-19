@@ -28,6 +28,53 @@ var lastMessageTime = '0';
 $(document).ready(() => {
     ipc.send('messageDomReady');
     $('#content-div').addClass('translucent');
+
+
+    $('#close_button').click(() => {
+        ipc.send('message_close');
+    });
+
+    $('#open_button').click(()=>{
+        ipc.send('openThread', threadID);
+        ipc.send('message_close');
+    });
+
+    $('#reply_button').click(() => {
+        $('#message-main').append('<div id="reply-div"> <textarea id="reply_message" res></textarea> <button id="reply_send"></button> </div>');
+        $('#reply_button').hide();
+        const minHeight = 32;
+        const maxHeight = 96;
+        var shiftDown = false;
+        function sendFunction() {
+            var replyMsg = $('#reply_message').val();
+            if (replyMsg.length <= 0) return;
+            sendMsg(replyMsg);
+        }
+        $('#reply_message').on('keyup keydown', (event) => {
+            shiftDown = event.shiftKey;
+            if (event.keyCode == 13 && !shiftDown) {
+                if (event.type == 'keydown') {
+                    sendFunction();
+                } else {
+                    $('#reply_message').val('');
+                    $('#reply_message').height(minHeight);
+                    resize();
+                }
+            }
+        });
+        $('#reply_message').on('input', (event) => {
+            while ($('#reply_message').height() == $('#reply_message')[0].scrollHeight && $('#reply_message').height() > minHeight) {
+                $('#reply_message').height($('#reply_message').height() - 1);
+            }
+            while ($('#reply_message')[0].scrollHeight > $('#reply_message').height() && $('#reply_message').height() < maxHeight) {
+                $('#reply_message').height($('#reply_message').height() + 1);
+            }
+            resize();
+        });
+        $('#reply_send').click(sendFunction);
+        resize();
+    });
+
 });
 
 $(document).click(() => {
@@ -136,7 +183,7 @@ function message_html(message) {
                     break;
             }
         });
-    content += message.body;
+    content += urlify(message.body);
     return '<p class="message-body clearfix">' + content + '</p>';
 }
 
@@ -156,12 +203,8 @@ function userTimestamp(date, timestampId) {
     return '<p id="' + timestampId + '" class="userTimestamp"> ' + ('0' + date.getHours()).slice(-2) + ':' + ('0' + date.getMinutes()).slice(-2) + ' </p>';
 }
 
-$('#close_button').click(() => {
-    ipc.send('message_close');
-});
-
 function userMessagePara(messageId, replyMsg) {
-    return '<p id="' + messageId + '" class="user-message-body unsent"> ' + replyMsg + ' </p>';
+    return '<p id="' + messageId + '" class="user-message-body unsent"> ' + urlify(replyMsg) + ' </p>';
 }
 
 function appendUserMessage(messageId, replyMsg, timestampId) {
@@ -204,46 +247,23 @@ function sendMsg(replyMsg) {
     }
 }
 
-$('#reply_button').click(() => {
-    $('#message-main').append('<div id="reply-div"> <textarea id="reply_message" res></textarea> <button id="reply_send"></button> </div>');
-    $('#reply_button').hide();
-    const minHeight = 32;
-    const maxHeight = 96;
-    var shiftDown = false;
-    function sendFunction() {
-        var replyMsg = $('#reply_message').val();
-        if (replyMsg.length <= 0) return;
-        sendMsg(replyMsg);
-    }
-    $('#reply_message').on('keyup keydown', (event) => {
-        shiftDown = event.shiftKey;
-        if (event.keyCode == 13 && !shiftDown) {
-            if (event.type == 'keydown') {
-                sendFunction();
-            } else {
-                $('#reply_message').val('');
-                $('#reply_message').height(minHeight);
-                resize();
-            }
-        }
-    });
-    $('#reply_message').on('input', (event) => {
-        while ($('#reply_message').height() == $('#reply_message')[0].scrollHeight && $('#reply_message').height() > minHeight) {
-            $('#reply_message').height($('#reply_message').height() - 1);
-        }
-        while ($('#reply_message')[0].scrollHeight > $('#reply_message').height() && $('#reply_message').height() < maxHeight) {
-            $('#reply_message').height($('#reply_message').height() + 1);
-        }
-        resize();
-    });
-    $('#reply_send').click(sendFunction);
-    resize();
-});
 
 function resize() {
     $('#content-div').height($('body')[0].scrollHeight);
     ipc.send('resizeHeight', $('body')[0].scrollHeight);
 }
+
+
+function urlify(text) {
+    if (text == undefined || text == null) return text;
+    var urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.replace(urlRegex, function (url) {
+        return '<a onClick="shell.openExternal(\'' + url + '\')">' + url + '</a>';
+    })
+    // or alternatively
+    // return text.replace(urlRegex, '<a href="$1">$1</a>')
+}
+
 
 function log(log) {
     ipc.send('console.log', log);
