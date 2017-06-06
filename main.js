@@ -3,7 +3,7 @@
 const electron = require('electron');
 
 //globalShortcut for global keyboard events for testing
-const { app, BrowserWindow, Tray, Menu, dialog, globalShortcut, nativeImage } = electron;
+const { app, BrowserWindow, Tray, Menu, MenuItem, dialog, globalShortcut, nativeImage } = electron;
 
 //Error handling
 process.on('uncaughtException', (err) => {
@@ -71,6 +71,8 @@ var profileWindow = null;
 
 var forceQuit = false;
 
+var muted = false;
+
 function fb(callback) {
 	if (facebook != null && facebook != undefined) {
 		callback(facebook);
@@ -80,9 +82,19 @@ function fb(callback) {
 }
 
 let tray = null;
+var contextMenu;
+const muteMenuItems = [{ label: '10 minutes', type: 'checkbox', click: (menuitem, browser, event) => mute(menuitem, 1000 * 60 * 10) },
+{ label: '30 minutes', type: 'checkbox', click: (menuitem, browser, event) => mute(menuitem, 1000 * 60 * 30) },
+{ label: '1 hour', type: 'checkbox', click: (menuitem, browser, event) => mute(menuitem, 1000 * 60 * 60) },
+{ label: '2 hour', type: 'checkbox', click: (menuitem, browser, event) => mute(menuitem, 1000 * 60 * 60 * 2) },
+{ label: '6 hour', type: 'checkbox', click: (menuitem, browser, event) => mute(menuitem, 1000 * 60 * 60 * 6) }];
+const muteMenu = Menu.buildFromTemplate(muteMenuItems);
+var currentMute;
 function makeTrayIcon(api) {
 	tray = new Tray(path.join(__dirname, '/img/ico24.png'));
-	const contextMenu = Menu.buildFromTemplate([
+	contextMenu = Menu.buildFromTemplate([
+		{ label: 'Mute for', type: 'submenu', submenu: muteMenu },
+		{ type: 'separator' },
 		{ label: 'Friends', type: 'normal', click: (menuitem, browser, event) => showProfileWindow(event, api, 'Friends') },
 		{ label: 'Messages', type: 'normal', click: (menuitem, browser, event) => showProfileWindow(event, api, 'Messages') },
 		{ type: 'separator' },
@@ -107,6 +119,18 @@ function makeTrayIcon(api) {
 	tray.setToolTip(appPackage.name)
 	tray.setContextMenu(contextMenu)
 
+}
+
+function mute(menuitem, time) {
+	currentMute = menuitem;
+	muted = true;
+	muteMenu.items.filter((item, index) => item != menuitem).forEach((item, index) => item.checked = false);
+	setTimeout(() => {
+		if (currentMute != menuitem) return;
+		muted = false;
+		currentMute = null;
+		muteMenu.items.filter((item, index) => item == menuitem).forEach((item, index) => item.checked = false);
+	}, time);
 }
 
 function showSettingsWindow() {
@@ -513,11 +537,11 @@ function runLogin(useAppState) {
 					if (err) {
 						console.log('Appstate login error.');
 						console.error(err);
-						if(login_fail_retry_count >= 10){
+						if (login_fail_retry_count >= 10) {
 							runLogin(false);
-						}else{
+						} else {
 							console.log('Retrying login...');
-							setTimeout(()=>runLogin(useAppState, ++login_fail_retry_count), 3000);
+							setTimeout(() => runLogin(useAppState, ++login_fail_retry_count), 3000);
 						}
 
 					} else {
@@ -639,6 +663,22 @@ function loadNextThreads(callback) {
 	});
 }
 
+function setTrayRecentThreads(threads) {
+	console.log('Setting recent threads in tray context menu...');
+	if (!Array.isArray(threads)) return;
+	console.log('Recent threads [' + threads.length + ']');
+	contextMenu.insert(0, new MenuItem({type: 'separator'}));
+	for (var i = 0; i < Math.min(5, threads.length); ++i) {
+		const userInfo = preloadedUserInfo[threads[i].participantIDs[0]];
+		const iconSrc = threads[i].isCanonicalUser ? userInfo.thumbSrc : threads[i].imageSrc;
+		const name = threads[i].isCanonicalUser ? userInfo.name : threads[i].name;
+		loadUrlToNativeImage(iconSrc, (error, img) => {
+			var menuitem = new MenuItem({ label: name, icon: img.resize({width: 24, height: 24}) });
+			contextMenu.insert(0, menuitem);
+		});
+	}
+}
+
 function loginSuccess(api) {
 	const { width, height } = electron.screen.getPrimaryDisplay().workAreaSize;
 	workAreaSize = { width: width, height: height };
@@ -659,6 +699,8 @@ function loginSuccess(api) {
 				currentUserInfo = userData[currentUserID];
 				preloadedUserInfo = collect(preloadedUserInfo, userData);
 				console.log('Loaded user info.');
+
+				setTrayRecentThreads(arr);
 			});
 
 			api.listen((err, message) => {
@@ -692,7 +734,7 @@ function handleMessage(api, message) {
 	});
 
 
-	if (!conversationExists) {
+	if (!conversationExists && !muted) {
 
 		var existingMessages = displayingMessages.filter((msg) => msg.message.threadID == message.threadID);
 		if (existingMessages.length > 0) {
@@ -983,6 +1025,17 @@ ipc.on('conversation_set_icon', (event, data) => {
 /*
 	MISCELLANOUS FUNCTIONS
 */
+
+function loadUrlToNativeImage(url, callback) {
+	request({ url: url, encoding: null }, (error, response, body) => {
+		if (response.statusCode == 200) {
+			callback(null, nativeImage.createFromBuffer(body));
+		} else {
+			console.log('Couldn\'t load image at ' + url);
+			callback(error);
+		}
+	});
+}
 
 function collect() {
 	var ret = {};
