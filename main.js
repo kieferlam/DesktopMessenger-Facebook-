@@ -271,7 +271,7 @@ function showProfileWindow(event, api, defaultTab) {
 	});
 }
 
-ipc.on('openThread', (event, threadID) => {
+var openThreadFunction = (event, threadID) => {
 	console.log('Open thread request. Thread ID: ' + threadID);
 
 	//Check if conversation is already open
@@ -380,7 +380,9 @@ ipc.on('openThread', (event, threadID) => {
 		conversation.window.show();
 	});
 
-});
+};
+
+ipc.on('openThread', openThreadFunction);
 
 ipc.on('conversation_send_message_async', (event, threadID, body, msgID) => {
 	fb((api) => {
@@ -672,8 +674,9 @@ function setTrayRecentThreads(threads) {
 		const userInfo = preloadedUserInfo[threads[i].participantIDs[0]];
 		const iconSrc = threads[i].isCanonicalUser ? userInfo.thumbSrc : threads[i].imageSrc;
 		const name = threads[i].isCanonicalUser ? userInfo.name : threads[i].name;
+		const thread = threads[i];
 		loadUrlToNativeImage(iconSrc, (error, img) => {
-			var menuitem = new MenuItem({ label: name, icon: img.resize({width: 24, height: 24}) });
+			var menuitem = new MenuItem({ label: name, icon: img.resize({width: 24, height: 24}), click: (menuitem, browser, event) =>  openThreadFunction(event, thread.threadID)});
 			contextMenu.insert(0, menuitem);
 		});
 	}
