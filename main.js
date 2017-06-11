@@ -34,7 +34,8 @@ var ipc = electron.ipcMain;
 
 global.settings = {
 	autoUpdate: true,
-	message_display_period: 5000
+	message_display_period: 5000,
+	quickMessagesAllowMuted: true,
 };
 
 global.package = appPackage;
@@ -669,14 +670,14 @@ function setTrayRecentThreads(threads) {
 	console.log('Setting recent threads in tray context menu...');
 	if (!Array.isArray(threads)) return;
 	console.log('Recent threads [' + threads.length + ']');
-	contextMenu.insert(0, new MenuItem({type: 'separator'}));
+	contextMenu.insert(0, new MenuItem({ type: 'separator' }));
 	for (var i = 0; i < Math.min(5, threads.length); ++i) {
 		const userInfo = preloadedUserInfo[threads[i].participantIDs[0]];
 		const iconSrc = threads[i].isCanonicalUser ? userInfo.thumbSrc : threads[i].imageSrc;
 		const name = threads[i].isCanonicalUser ? userInfo.name : threads[i].name;
 		const thread = threads[i];
 		loadUrlToNativeImage(iconSrc, (error, img) => {
-			var menuitem = new MenuItem({ label: name, icon: img.resize({width: 24, height: 24}), click: (menuitem, browser, event) =>  openThreadFunction(event, thread.threadID)});
+			var menuitem = new MenuItem({ label: name, icon: img.resize({ width: 24, height: 24 }), click: (menuitem, browser, event) => openThreadFunction(event, thread.threadID) });
 			contextMenu.insert(0, menuitem);
 		});
 	}
@@ -726,6 +727,131 @@ function calculateWinHeights(curr = 999) {
 	return currentHeight;
 }
 
+function handleQuickMessage() {
+	var existingMessages = displayingMessages.filter((msg) => msg.message.threadID == message.threadID);
+	if (existingMessages.length > 0) {
+		console.log('Appending message to existing window.');
+		//Message already exists
+		var existingWin = existingMessages[0];
+		if (!existingWin.window.interacted) existingWin.window.restartCloseTimer();
+		if (!DEBUG_LOCAL_MODE) api.getUserInfo(message.senderID, function (err, ret) {
+			if (err) return console.error(err);
+			var userInfo = { userID: message.senderID, message_data: message, data: ret[message.senderID] };
+			existingWin.window.webContents.send('anotherMessage', userInfo);
+		});
+		else
+			existingWin.window.webContents.send('anotherMessage', { userID: message.senderID, message_data: message });
+	} else {
+		console.log('New message window.');
+		//Display new message
+		var newWin = new BrowserWindow({
+			width: message_win_width,
+			height: 128,
+			frame: false,
+			transparent: true,
+			resizable: false,
+			show: false,
+			icon: './img/ico24.png',
+			alwaysOnTop: true,
+			skipTaskbar: true
+		});
+		newWin.isDisplaying = false;
+		var msgWinObj = { window: newWin, message: message, api: api };
+		newWin.setPosition(workAreaSize.width, workAreaSize.height - newWin.getPosition()[1] - calculateWinHeights());
+		displayingMessages.push(msgWinObj);
+		newWin.interacted = false;
+		var autoCloseRunning = false;
+		// newWin.webContents.openDevTools();
+
+		newWin.loadURL(url.format({
+			pathname: path.join(__dirname, 'incomingmessage.html'),
+			protocol: 'file',
+			slashes: true
+		}));
+
+		const animateCloseFunction = function () {
+			if (autoCloseRunning) return;
+			autoCloseRunning = true;
+			const closeAnim = animate(
+				0,
+				message_win_width,
+				300,
+				(val) => newWin.setPosition(Math.round(workAreaSize.width - (message_win_width - val)), newWin.getPosition()[1]),
+				(x, dur) => {
+					return Math.pow((0.003 * (1000 / dur) * x) + 1, -3);
+				},
+				() => newWin.close()
+			);
+		}
+
+		newWin.restartCloseTimer = function () {
+			clearTimeout(newWin.autoCloseTimeout);
+			if (global.settings.message_display_period > 0) {
+				newWin.autoCloseTimeout = setTimeout(animateCloseFunction, global.settings.message_display_period);
+			}
+		}
+
+		newWin.forceAutoClose = function () {
+			if (!autoCloseRunning) {
+				clearTimeout(newWin.autoCloseTimeout);
+				animateCloseFunction();
+			}
+		}
+
+		ipc.once('messageInteracted', () => {
+			newWin.interacted = true;
+			clearTimeout(newWin.autoCloseTimeout);
+		});
+
+		ipc.once('messageDomReady', (event, arg) => {
+			console.log('Message DOM ready.');
+			if (!DEBUG_LOCAL_MODE) api.getUserInfo(message.senderID, function (err, ret) {
+				if (err) return console.error(err);
+				var userInfo = { userID: message.senderID, message: message, data: ret[message.senderID] };
+				event.sender.send('initMessageDetails', threadData, userInfo, preloadedUserInfo);
+			});
+			else
+				event.sender.send('initMessageDetails', {}, { message: message });
+		});
+
+		ipc.once('readyToDisplay', (event, height) => {
+			try {
+				console.log('Message window ready to display with height of ' + height);
+				if (height > quickMessageMaxHeight) height = quickMessageMaxHeight;
+				newWin.setSize(newWin.getSize()[0], height);
+				newWin.setPosition(workAreaSize.width, workAreaSize.height - height - calculateWinHeights(displayingMessages.indexOf(msgWinObj)));
+				newWin.show();
+				newWin.isDisplaying = true;
+				if (newWin.slideInAnim != 0 && !isLinux) {
+					newWin.slideInAnim = animate(
+						0,
+						message_win_width,
+						300,
+						(val) => newWin.setPosition(Math.round(workAreaSize.width - val), newWin.getPosition()[1]),
+						(x, dur) => {
+							return Math.pow((0.003 * (1000 / dur) * x) + 1, -3);
+						},
+						() => {
+							newWin.slideInAnim = 0;
+							newWin.restartCloseTimer();
+						}
+					);
+				}
+			} catch (e) {
+				console.error(e);
+			}
+		});
+
+		newWin.once('close', () => {
+			autoCloseRunning = false;
+			console.log('Message window (' + displayingMessages.indexOf(msgWinObj) + ') closed.');
+			displayingMessages.splice(displayingMessages.indexOf(msgWinObj), 1);
+		});
+
+		console.log('Finished setting up.');
+	}
+}
+
 function handleMessage(api, message) {
 	console.log("New message from " + message.senderID + ": " + message.body);
 
@@ -739,133 +865,16 @@ function handleMessage(api, message) {
 
 	if (!conversationExists && !muted) {
 
-		var existingMessages = displayingMessages.filter((msg) => msg.message.threadID == message.threadID);
-		if (existingMessages.length > 0) {
-			console.log('Appending message to existing window.');
-			//Message already exists
-			var existingWin = existingMessages[0];
-			if (!existingWin.window.interacted) existingWin.window.restartCloseTimer();
-			if (!DEBUG_LOCAL_MODE) api.getUserInfo(message.senderID, function (err, ret) {
-				if (err) return console.error(err);
-				var userInfo = { userID: message.senderID, message_data: message, data: ret[message.senderID] };
-				existingWin.window.webContents.send('anotherMessage', userInfo);
-			});
-			else
-				existingWin.window.webContents.send('anotherMessage', { userID: message.senderID, message_data: message });
-		} else {
-			console.log('New message window.');
-			//Display new message
-			var newWin = new BrowserWindow({
-				width: message_win_width,
-				height: 128,
-				frame: false,
-				transparent: true,
-				resizable: false,
-				show: false,
-				icon: './img/ico24.png',
-				alwaysOnTop: true,
-				skipTaskbar: true
-			});
-			newWin.isDisplaying = false;
-			var msgWinObj = { window: newWin, message: message, api: api };
-			newWin.setPosition(workAreaSize.width, workAreaSize.height - newWin.getPosition()[1] - calculateWinHeights());
-			displayingMessages.push(msgWinObj);
-			newWin.interacted = false;
-			var autoCloseRunning = false;
-			// newWin.webContents.openDevTools();
-
-			newWin.loadURL(url.format({
-				pathname: path.join(__dirname, 'incomingmessage.html'),
-				protocol: 'file',
-				slashes: true
-			}));
-
-			const animateCloseFunction = function () {
-				if (autoCloseRunning) return;
-				autoCloseRunning = true;
-				const closeAnim = animate(
-					0,
-					message_win_width,
-					300,
-					(val) => newWin.setPosition(Math.round(workAreaSize.width - (message_win_width - val)), newWin.getPosition()[1]),
-					(x, dur) => {
-						return Math.pow((0.003 * (1000 / dur) * x) + 1, -3);
-					},
-					() => newWin.close()
-				);
-			}
-
-			newWin.restartCloseTimer = function () {
-				clearTimeout(newWin.autoCloseTimeout);
-				if (global.settings.message_display_period > 0) {
-					newWin.autoCloseTimeout = setTimeout(animateCloseFunction, global.settings.message_display_period);
+		api.getThreadInfo(message.threadID, (err, threadData) => {
+			if (err) return console.error(err);
+			loadRelevantUserInfo(api, [threadData], (newUserInfo) => {
+				if(threadData.mute_until == -1 && !global.settings.quickMessagesAllowMuted){
+					return;
 				}
-			}
-
-			newWin.forceAutoClose = function () {
-				if (!autoCloseRunning) {
-					clearTimeout(newWin.autoCloseTimeout);
-					animateCloseFunction();
-				}
-			}
-
-			ipc.once('messageInteracted', () => {
-				newWin.interacted = true;
-				clearTimeout(newWin.autoCloseTimeout);
+				handleQuickMessage();
 			});
+		});
 
-			ipc.once('messageDomReady', (event, arg) => {
-				console.log('Message DOM ready.');
-				if (!DEBUG_LOCAL_MODE) api.getUserInfo(message.senderID, function (err, ret) {
-					if (err) return console.error(err);
-					var userInfo = { userID: message.senderID, message: message, data: ret[message.senderID] };
-					api.getThreadInfo(message.threadID, (err, threadData) => {
-						if (err) return console.error(err);
-						loadRelevantUserInfo(api, [threadData], (newUserInfo) => {
-							event.sender.send('initMessageDetails', threadData, userInfo, preloadedUserInfo);
-						});
-					});
-				});
-				else
-					event.sender.send('initMessageDetails', {}, { message: message });
-			});
-
-			ipc.once('readyToDisplay', (event, height) => {
-				try {
-					console.log('Message window ready to display with height of ' + height);
-					if (height > quickMessageMaxHeight) height = quickMessageMaxHeight;
-					newWin.setSize(newWin.getSize()[0], height);
-					newWin.setPosition(workAreaSize.width, workAreaSize.height - height - calculateWinHeights(displayingMessages.indexOf(msgWinObj)));
-					newWin.show();
-					newWin.isDisplaying = true;
-					if (newWin.slideInAnim != 0 && !isLinux) {
-						newWin.slideInAnim = animate(
-							0,
-							message_win_width,
-							300,
-							(val) => newWin.setPosition(Math.round(workAreaSize.width - val), newWin.getPosition()[1]),
-							(x, dur) => {
-								return Math.pow((0.003 * (1000 / dur) * x) + 1, -3);
-							},
-							() => {
-								newWin.slideInAnim = 0;
-								newWin.restartCloseTimer();
-							}
-						);
-					}
-				} catch (e) {
-					console.error(e);
-				}
-			});
-
-			newWin.once('close', () => {
-				autoCloseRunning = false;
-				console.log('Message window (' + displayingMessages.indexOf(msgWinObj) + ') closed.');
-				displayingMessages.splice(displayingMessages.indexOf(msgWinObj), 1);
-			});
-
-			console.log('Finished setting up.');
-		}
 	}
 }
 
