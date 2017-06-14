@@ -1,6 +1,6 @@
 {
   "name": "DesktopMessenger",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Desktop app integrated with Facebook Messenger",
   "main": "main.js",
   "scripts": {
