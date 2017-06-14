@@ -5,7 +5,7 @@ var ipc = electron.ipcRenderer;
 const remote = electron.remote;
 
 window.onerror = function(error, url, line){
-    mainLog("Error at line " + line + ": " + error);
+    log("Error at line " + line + ": " + error);
 };
 
 const AutoLaunch = require('auto-launch');
@@ -73,6 +73,11 @@ function setupMessagePreviewPanel() {
             $('#message_display_period-number').addClass('error_outline');
         }
     });
+
+    $('#message_allow_muted-checkbox').attr('checked', settings.quickMessagesAllowMuted);
+    $('#message_allow_muted-checkbox').change(()=>{
+        settings.quickMessagesAllowMuted = $('#message_allow_muted-checkbox').prop('checked');
+    });
 }
 
 function setupSystemPanel() {
@@ -80,11 +85,11 @@ function setupSystemPanel() {
     $('#launch_on_startup-checkbox').prop('checked', selfAutoLaunch.isEnabled());
     $('#launch_on_startup-checkbox').change((event)=>{
         if($('#launch_on_startup-checkbox').is(':checked')){
-            mainLog('Enabling launch on system startup.');
-            selfAutoLaunch.enable((err)=>mainLog('Error: Could\'t enable launch_on_startup.'));
+            log('Enabling launch on system startup.');
+            selfAutoLaunch.enable((err)=>log('Error: Could\'t enable launch_on_startup.'));
         }else{
-            mainLog('Disabling launch on system startup.');
-            selfAutoLaunch.disable((err)=>mainLog('Error: Could\'t disable launch_on_startup.'));
+            log('Disabling launch on system startup.');
+            selfAutoLaunch.disable((err)=>log('Error: Could\'t disable launch_on_startup.'));
         }
     });
 }
@@ -94,6 +99,6 @@ function setupAboutPanel(){
     $('#about_version-h2').text('Version ' + package.version);
 }
 
-function mainLog(log) {
+function log(log) {
     ipc.send('console.log', log);
 }
