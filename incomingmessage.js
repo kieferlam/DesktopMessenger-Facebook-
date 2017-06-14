@@ -119,6 +119,11 @@ ipc.once('initMessageDetails', (event, threadinfo, messageInfo, preloadedUserInf
 
 ipc.on('anotherMessage', (event, userInfo) => {
     log('Appending message.');
+    if(userInfo.message_data.threadID != threadID){
+        log('Message sent to wrong thread! Current thread: ' + threadID);
+        log(userInfo);
+        return;
+    }
     appendMessage(userInfo.message_data);
     resize();
 });
@@ -188,7 +193,7 @@ function message_html(message) {
 }
 
 function sender_name() {
-    if (completeData.message.isGroup && completeData.threadInfo.nicknames != null) {
+    if (completeData != null && completeData.message.isGroup && completeData.threadInfo.nicknames != null) {
         var nick = completeData.threadInfo.nicknames[lastSenderID.toString()];
         if (nick != null) return nick + ' (' + userInfo[lastSenderID].name + ') ';
     }

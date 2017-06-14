@@ -35,7 +35,7 @@ var ipc = electron.ipcMain;
 global.settings = {
 	autoUpdate: true,
 	message_display_period: 5000,
-	quickMessagesAllowMuted: true,
+	quickMessagesAllowMuted: false,
 };
 
 global.package = appPackage;
@@ -638,14 +638,14 @@ function loadRelevantUserInfo(api, threads, callback) {
 	}
 
 	if (userIDs.length == 0) {
-		callback({});
+		return callback({});
 	}
 
-	api.getUserInfo(userIDs, (err, userData) => {
+	return api.getUserInfo(userIDs, (err, userData) => {
 		if (err) return console.error(err);
 		preloadedUserInfo = collect(preloadedUserInfo, userData);
 		if (callback != undefined && callback != null) {
-			callback(userData);
+			return callback(userData);
 		}
 	});
 
@@ -727,7 +727,7 @@ function calculateWinHeights(curr = 999) {
 	return currentHeight;
 }
 
-function handleQuickMessage() {
+function handleQuickMessage(api, message, threadData) {
 	var existingMessages = displayingMessages.filter((msg) => msg.message.threadID == message.threadID);
 	if (existingMessages.length > 0) {
 		console.log('Appending message to existing window.');
@@ -864,14 +864,15 @@ function handleMessage(api, message) {
 
 
 	if (!conversationExists && !muted) {
-
 		api.getThreadInfo(message.threadID, (err, threadData) => {
 			if (err) return console.error(err);
 			loadRelevantUserInfo(api, [threadData], (newUserInfo) => {
-				if(threadData.mute_until == -1 && !global.settings.quickMessagesAllowMuted){
+				//Facebooks mute until time is seconds since epoch (NOT MILLIS)
+				if((threadData.muteUntil == -1 || Date.now() < threadData.muteUntil * 1000) && !global.settings.quickMessagesAllowMuted){
+					console.log('Thread is muted.');
 					return;
 				}
-				handleQuickMessage();
+				handleQuickMessage(api, message, threadData);
 			});
 		});
 
