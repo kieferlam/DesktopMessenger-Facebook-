@@ -36,6 +36,7 @@ global.settings = {
 	autoUpdate: true,
 	message_display_period: 5000,
 	quickMessagesAllowMuted: false,
+	trayContextMenuRecentThreadsAmount: 8,
 };
 
 global.package = appPackage;
@@ -671,7 +672,7 @@ function setTrayRecentThreads(threads) {
 	if (!Array.isArray(threads)) return;
 	console.log('Recent threads [' + threads.length + ']');
 	contextMenu.insert(0, new MenuItem({ type: 'separator' }));
-	for (var i = 0; i < Math.min(5, threads.length); ++i) {
+	for (var i = 0; i < Math.min(global.settings.trayContextMenuRecentThreadsAmount, threads.length); ++i) {
 		const userInfo = preloadedUserInfo[threads[i].participantIDs[0]];
 		const iconSrc = threads[i].isCanonicalUser ? userInfo.thumbSrc : threads[i].imageSrc;
 		const name = threads[i].isCanonicalUser ? userInfo.name : threads[i].name;

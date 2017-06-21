@@ -58,6 +58,7 @@ function setup() {
     });
 
     setupMessagePreviewPanel();
+    setupApplicationPanel();
     setupSystemPanel();
     setupAboutPanel();
 }
@@ -66,7 +67,7 @@ function setupMessagePreviewPanel() {
     $('#message_display_period-number').val(settings.message_display_period);
     $('#message_display_period-number').on('mouseup keyup', (event) => {
         var value = $('#message_display_period-number').val();
-        if (validate(value)) {
+        if (validate(value) && value > -1) {
             $('#message_display_period-number').removeClass('error_outline');
             settings.message_display_period = value;
         } else {
@@ -78,6 +79,20 @@ function setupMessagePreviewPanel() {
     $('#message_allow_muted-checkbox').change(()=>{
         settings.quickMessagesAllowMuted = $('#message_allow_muted-checkbox').prop('checked');
     });
+}
+
+function setupApplicationPanel(){
+    $('#tray_menu_threads-number').val(settings.trayContextMenuRecentThreadsAmount);
+    $('#tray_menu_threads-number').on('mouseup keyup', (event) => {
+        var value = $('#tray_menu_threads-number').val();
+        if (validate(value) && value > -1) {
+            $('#tray_menu_threads-number').removeClass('error_outline');
+            settings.trayContextMenuRecentThreadsAmount = value;
+        } else {
+            $('#tray_menu_threads-number').addClass('error_outline');
+        }
+    });
+    
 }
 
 function setupSystemPanel() {
