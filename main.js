@@ -676,10 +676,15 @@ function setTrayRecentThreads(threads) {
 		const iconSrc = threads[i].isCanonicalUser ? userInfo.thumbSrc : threads[i].imageSrc;
 		const name = threads[i].isCanonicalUser ? userInfo.name : threads[i].name;
 		const thread = threads[i];
-		loadUrlToNativeImage(iconSrc, (error, img) => {
-			var menuitem = new MenuItem({ label: name, icon: img.resize({ width: 24, height: 24 }), click: (menuitem, browser, event) => openThreadFunction(event, thread.threadID) });
+		if (iconSrc != null) {
+			loadUrlToNativeImage(iconSrc, (error, img) => {
+				var menuitem = new MenuItem({ label: name, icon: img.resize({ width: 24, height: 24 }), click: (menuitem, browser, event) => openThreadFunction(event, thread.threadID) });
+				contextMenu.insert(0, menuitem);
+			});
+		} else {
+			var menuitem = new MenuItem({ label: name, click: (menuitem, browser, event) => openThreadFunction(event, thread.threadID) });
 			contextMenu.insert(0, menuitem);
-		});
+		}
 	}
 }
 
@@ -868,7 +873,7 @@ function handleMessage(api, message) {
 			if (err) return console.error(err);
 			loadRelevantUserInfo(api, [threadData], (newUserInfo) => {
 				//Facebooks mute until time is seconds since epoch (NOT MILLIS)
-				if((threadData.muteUntil == -1 || Date.now() < threadData.muteUntil * 1000) && !global.settings.quickMessagesAllowMuted){
+				if ((threadData.muteUntil == -1 || Date.now() < threadData.muteUntil * 1000) && !global.settings.quickMessagesAllowMuted) {
 					console.log('Thread is muted.');
 					return;
 				}
